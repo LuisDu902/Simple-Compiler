@@ -1,5 +1,11 @@
 import Data.Char
 
+import qualified Stack as Stack (push, pop)
+import Stack (Stack, createEmptyStack, stack2Str)
+
+import qualified State as State (push, find)
+import State (State, createEmptyState, state2Str)
+
 -- Part 1
 
 -- Do not modify our definition of Inst and Code
@@ -9,17 +15,6 @@ data Inst =
   deriving Show
 type Code = [Inst]
 
--- createEmptyStack :: Stack
-createEmptyStack = undefined -- TODO, Uncomment the function signature after defining Stack
-
--- stack2Str :: Stack -> String
-stack2Str = undefined -- TODO, Uncomment all the other function type declarations as you implement them
-
--- createEmptyState :: State
-createEmptyState = undefined -- TODO, Uncomment the function signature after defining State
-
--- state2Str :: State -> String
-state2Str = undefined -- TODO
 
 -- run :: (Code, Stack, State) -> (Code, Stack, State)
 run = undefined -- TODO
