@@ -1,3 +1,5 @@
+import Data.Char
+
 -- Part 1
 
 -- Do not modify our definition of Inst and Code
@@ -48,6 +50,9 @@ testAssembler code = (stack2Str stack, state2Str state)
 
 -- TODO: Define the types Aexp, Bexp, Stm and Program
 
+
+
+
 -- compA :: Aexp -> Code
 compA = undefined -- TODO
 
@@ -61,9 +66,92 @@ compile = undefined -- TODO
 parse = undefined -- TODO
 
 -- To help you test your parser
-testParser :: String -> (String, String)
-testParser programCode = (stack2Str stack, store2Str store)
-  where (_,stack,store) = run(compile (parse programCode), createEmptyStack, createEmptyStore)
+--testParser :: String -> (String, String)
+--testParser programCode = (stack2Str stack, store2Str store)
+--  where (_,stack,store) = run(compile (parse programCode), createEmptyStack, createEmptyStore)
+
+
+
+data Token = PlusTok
+          | TimesTok
+          | OpenTok
+          | CloseTok
+          | SubTok
+          | IntEqualTok
+          | LessEqualTok
+          | BoolEqualTok
+          | AndTok
+          | NegTok
+          | AssignTok
+          | IfTok
+          | ThenTok
+          | ElseTok
+          | WhileTok
+          | DoTok
+          | EndTok
+          | IntTok Int
+          | BoolTok Bool
+          | VarTok String
+          deriving (Show)
+
+
+lexer :: String -> [Token]
+lexer [] = []
+
+-- Symbols
+lexer (';' : rest) = EndTok : lexer rest
+lexer ('+' : rest) = PlusTok : lexer rest
+lexer ('-' : rest) = SubTok : lexer rest
+lexer ('*' : rest) = TimesTok : lexer rest
+lexer ('(' : rest) = OpenTok : lexer rest
+lexer (')' : rest) = CloseTok : lexer rest
+lexer (':' : '=' : rest) = AssignTok : lexer rest 
+lexer ('<' : '=' : rest) = LessEqualTok : lexer rest 
+lexer ('=' : '=' : rest) = IntEqualTok : lexer rest 
+lexer ('=' : rest) = BoolEqualTok : lexer rest 
+
+-- If statements
+lexer ('i' : 'f' : rest) = IfTok : lexer rest 
+lexer ('t' : 'h' : 'e': 'n' : rest) = ThenTok : lexer rest 
+lexer ('e' : 'l' : 's': 'e' : rest) = ElseTok : lexer rest 
+
+-- Boolean operations
+lexer ('n' : 'o' : 't': rest) = NegTok : lexer rest 
+lexer ('a' : 'n' : 'd': rest) = AndTok : lexer rest 
+
+-- While loops
+lexer ('w' : 'h' : 'i': 'l': 'e' : rest) = WhileTok : lexer rest 
+lexer ('d' : 'o' : rest) = DoTok : lexer rest 
+
+-- Boolean values
+lexer ('T' : 'r' : 'u': 'e' : rest) = BoolTok True : lexer rest 
+lexer ('F' : 'a' : 'l': 's': 'e' : rest) = BoolTok False : lexer rest 
+
+-- Space
+lexer (chr : rest)
+    | isSpace chr 
+    = lexer rest
+
+-- Integer values
+lexer str@(chr : _)
+    | isDigit chr 
+    = IntTok (stringToInt integer) : lexer rest
+    where 
+      (integer, rest) = span isDigit str
+      stringToInt :: String -> Int
+      stringToInt=foldl (\acc chr->10*acc+digitToInt chr) 0
+
+-- Variables
+lexer str@(chr : _)
+    | isLower chr 
+    = VarTok variable : lexer rest
+    where
+      (variable, rest) = span isVariable str
+      isVariable :: Char -> Bool
+      isVariable c = not (isSpace c) && isAlphaNum c && c `notElem` ['+', '-', '*', ':', '=', ';', '<', ')', '('] 
+
+-- Error handling
+lexer (chr : rest) = error ("unexpected character: ’" ++ show(chr) ++ "’")
 
 -- Examples:
 -- testParser "x := 5; x := x - 1;" == ("","x=4")
@@ -73,3 +161,9 @@ testParser programCode = (stack2Str stack, store2Str store)
 -- testParser "x := 42; if x <= 43 then x := 1; else x := 33; x := x+1; z := x+x;" == ("","x=2,z=4")
 -- testParser "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);" == ("","x=2,y=-10,z=6")
 -- testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")
+
+
+main :: IO ()
+main = do
+    let tokens = lexer "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);"
+    print tokens
