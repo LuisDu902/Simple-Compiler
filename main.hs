@@ -16,11 +16,12 @@ data Inst =
   Push Integer | Add | Mult | Sub | Tru | Fals | Equ | Le | And | Neg | Fetch String | Store String | Noop |
   Branch Code Code | Loop Code Code
   deriving Show
-type Code = [Inst]
+type Code = [Inst] 
 
 
 run :: (Code, Stack, State) -> (Code, Stack, State)
-run = undefined -- TODO
+run ([], stack, state) = ([], stack, state)
+-- run ([Add,rest], stack, state) = add(rest,stack,state)
 
 -- To help you test your assembler
 testAssembler :: Code -> (String, String)
@@ -28,33 +29,32 @@ testAssembler code = (stack2Str stack, state2Str state)
   where (_,stack,state) = run (code, createEmptyStack, createEmptyState)
 
 add :: (Code, Stack, State) -> (Code, Stack, State) 
-add (code, stack, state) = (code, Stk.push ((Elm.+) (Stk.top s) (Stk.top (Stk.pop s))) (Stk.pop (Stk.pop s)), state)
+add (code, stack, state) = (code, Stk.push ((Elm.+) (Stk.top stack) (Stk.top (Stk.pop stack))) (Stk.pop (Stk.pop stack)), state)
 
 sub :: (Code, Stack, State) -> (Code, Stack, State) 
-sub (code, stack, state) = (code, Stk.push ((Elm.-) (Stk.top s) (Stk.top (Stk.pop s))) (Stk.pop (Stk.pop s)), state)
+sub (code, stack, state) = (code, Stk.push ((Elm.-) (Stk.top stack) (Stk.top (Stk.pop stack))) (Stk.pop (Stk.pop stack)), state)
 
 mul :: (Code, Stack, State) -> (Code, Stack, State) 
-mul (code, stack, state) = (code, Stk.push ((Elm.*) (Stk.top s) (Stk.top (Stk.pop s))) (Stk.pop (Stk.pop s)), state)
+mul (code, stack, state) = (code, Stk.push ((Elm.*) (Stk.top stack) (Stk.top (Stk.pop stack))) (Stk.pop (Stk.pop stack)), state)
 
 eq :: (Code, Stack, State) -> (Code, Stack, State)
-eq (code, stack, state) = (code, Stk.push ((Elm.==) (Stk.top s) (Stk.top (Stk.pop s))) (Stk.pop (Stk.pop s)), state)
+eq (code, stack, state) = (code, Stk.push ((Elm.==) (Stk.top stack) (Stk.top (Stk.pop stack))) (Stk.pop (Stk.pop stack)), state)
 
 le :: (Code, Stack, State) -> (Code, Stack, State)
-le (code, stack, state) = (code, Stk.push ((Elm.<=) (Stk.top s) (Stk.top (Stk.pop s))) (Stk.pop (Stk.pop s)), state)
+le (code, stack, state) = (code, Stk.push ((Elm.<=) (Stk.top stack) (Stk.top (Stk.pop stack))) (Stk.pop (Stk.pop stack)), state)
 
 tru :: (Code, Stack, State) -> (Code, Stack, State)
-tru (code, stack, state) = (code, Stk.push (Elm.B True) s, state)
+tru (code, stack, state) = (code, Stk.push (Elm.B True) stack, state)
 
 fals :: (Code, Stack, State) -> (Code, Stack, State) 
-fals (code, stack, state) = (code, Stk.push (Elm.B False) s, state)
+fals (code, stack, state) = (code, Stk.push (Elm.B False) stack, state)
 
 push :: (Code, Stack, State) -> Integer -> (Code, Stack, State)
-push (code, stack, state) v = (code, Stk.push (Elm.I v) s, state)
+push (code, stack, state) v = (code, Stk.push (Elm.I v) stack, state)
 
 neg :: (Code, Stack, State) -> (Code, Stack, State)
-neg (code, stack, state) = let n1 = Stk.top s in 
-  let s2 = Stk.pop s in 
-  Stk.push (Elm.not n1) s2
+neg (code, stack, state) = let s2 = Stk.pop stack in 
+  (code,Stk.push (Elm.not (Stk.top stack)) s2, state)
 
 fetch :: (Code, Stack, State) -> String -> (Code, Stack, State)
 fetch (code, stack, state) str = let n1 = Stk.top stack in 
