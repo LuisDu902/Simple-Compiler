@@ -3,6 +3,8 @@ second (_,e,_) = e
 third (_,_,e) = e
 
 strStart s pref = let prefLen = length pref in let s2 = take prefLen s in s2 == pref
+strUntilSpaceRec str out = if head str == ' ' then out else let out2 = head str : out in strUntilSpaceRec tail str out2
+strUntilSpace str = strUntilSpaceRec str []
 stackPush a s = a : s
 stackPop s = tail s
 stackTop s = head s

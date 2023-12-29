@@ -1,10 +1,13 @@
 import Data.Char
 
-import qualified Stack as Stack (push, pop)
+import qualified Element as Elm
+
+import qualified Stack as Stk (push, pop, top)
 import Stack (Stack, createEmptyStack, stack2Str)
 
-import qualified State as State (push, find)
+import qualified State as Stt (push, find)
 import State (State, createEmptyState, state2Str)
+
 
 -- Part 1
 
@@ -23,6 +26,44 @@ run = undefined -- TODO
 testAssembler :: Code -> (String, String)
 testAssembler code = (stack2Str stack, state2Str state)
   where (_,stack,state) = run (code, createEmptyStack, createEmptyState)
+
+add :: Stack -> Stack 
+add s = Stk.push ((Elm.+) (Stk.top s) (Stk.top (Stk.pop s))) (Stk.pop (Stk.pop s))
+
+sub :: Stack -> Stack 
+sub s = Stk.push ((Elm.-) (Stk.top s) (Stk.top (Stk.pop s))) (Stk.pop (Stk.pop s))
+
+mul :: Stack -> Stack 
+mul s = Stk.push ((Elm.*) (Stk.top s) (Stk.top (Stk.pop s))) (Stk.pop (Stk.pop s))
+
+eq :: Stack -> Stack
+eq s = Stk.push ((Elm.==) (Stk.top s) (Stk.top (Stk.pop s))) (Stk.pop (Stk.pop s))
+
+le :: Stack -> Stack
+le s = Stk.push ((Elm.<=) (Stk.top s) (Stk.top (Stk.pop s))) (Stk.pop (Stk.pop s))
+
+tru :: Stack -> Stack
+tru s = Stk.push (Elm.B True) s
+
+fals :: Stack -> Stack 
+fals s = Stk.push (Elm.B False) s
+
+push :: Stack -> Integer -> Stack
+push s v = Stk.push (Elm.I v) s
+
+neg :: Stack -> Stack
+neg s = let n1 = Stk.top s in let s2 = Stk.pop s in Stk.push (Elm.not n1) s2
+
+fetch :: Stack -> String -> State -> Stack
+fetch stack str state = let n1 = Stk.top stack in let newVal = Stt.find str state in case newVal of 
+ Just a -> Stk.push a stack
+ Nothing -> error "Runtime error"
+
+store :: Stack -> String -> State -> (State,Stack)
+store stack str state = let newVal = Stk.top stack in let newState = Stt.push str newVal state in (newState,Stk.pop stack)
+
+noop :: Stack -> State -> (Stack, State)
+noop stack state = (stack,state)
 
 -- Examples:
 -- testAssembler [Push 10,Push 4,Push 3,Sub,Mult] == ("-10","")

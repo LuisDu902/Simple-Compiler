@@ -1,11 +1,6 @@
 module Stack where
 
-data Value =
-  Int Integer | Bl Bool
-
-instance Show Value where
-    show (Int var) = show var
-    show (Bl var) = show var
+import Element
 
 type Stack = [Value]
 
@@ -16,11 +11,18 @@ push :: Value -> Stack -> Stack
 push a [] = a:[]
 push a s = a:s
 
-pop :: Stack -> (Maybe Value, Stack)
-pop [] = (Nothing, [])
-pop (a:s) = (Just a, s)
+pop :: Stack -> Stack
+pop (a:s) = s
+pop _ = error "Stack.pop: the stack is empty"
+
+top :: Stack -> Value
+top (a:s) = a
+top _ = error "Stack.top: the stack is empty"
 
 stack2Str :: Stack -> String
 stack2Str [] = ""
 stack2Str (a:[]) = show a
 stack2Str (a:s) = show a ++ "," ++ (stack2Str s)
+
+size :: Stack -> Int
+size s = length s
