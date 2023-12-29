@@ -86,25 +86,23 @@ noop stack state = (stack,state)
 
 -- TODO: Define the types Aexp, Bexp, Stm and Program
 
-
+data ALit = IntValue Integer | IntVariable String
 
 data Aexp
-  = IntValue  Integer
-  | IntVariable  String
+  = IntLit ALit
   | IntAdd    Aexp Aexp
   | IntMult   Aexp Aexp
   | IntSub    Aexp Aexp
 
+data BLit = BoolValue Bool | BoolVariable String
 
 data Bexp
-  = BoolValue  Bool
-  | IntValue2  Integer
-  | BoolVariable  String
-  | IntEqual  Bexp Bexp
-  | IntLe     Bexp Bexp
+  = BoolLit  BLit
   | BoolNeg    Bexp
   | BoolAnd    Bexp Bexp
   | BoolEqual  Bexp Bexp
+  | IntEqual  Aexp Aexp
+  | IntLe     Aexp Aexp
 
 data Stm
   = IfStm Bexp [Stm] [Stm]
@@ -115,22 +113,22 @@ data Stm
 type Program = [Stm]
 
 compA :: Aexp -> Code
-compA (IntValue n) = [Push n]
-compA (IntVariable var) = [Fetch var]
+compA (IntLit (IntValue n)) = [Push n]
+compA (IntLit (IntVariable var)) = [Fetch var]
 compA (IntAdd exp1 exp2) = compA exp2 ++ compA exp1 ++ [Add]
 compA (IntMult exp1 exp2) = compA exp2 ++ compA exp1 ++ [Mult]
 compA (IntSub exp1 exp2) = compA exp2 ++ compA exp1 ++ [Sub]
 
 compB :: Bexp -> Code
-compB (BoolValue True) = [Tru]
-compB (BoolValue False) = [Fals]
-compB (BoolVariable var) = [Fetch var]
-compB (IntValue2 n) = [Push n]
+compB (BoolLit (BoolValue n))
+  | n         = [Tru]  
+  | otherwise = [Fals] 
+compB (BoolLit (BoolVariable var)) = [Fetch var]
 compB (BoolNeg exp) = compB exp ++ [Neg]
 compB (BoolAnd exp1 exp2) = compB exp2 ++ compB exp1 ++ [And]
 compB (BoolEqual exp1 exp2) = compB exp2 ++ compB exp1 ++ [Equ]
-compB (IntEqual exp1 exp2) = compB exp2 ++ compB exp1 ++ [Equ]
-compB (IntLe exp1 exp2) = compB exp2 ++ compB exp1 ++ [Le]
+compB (IntEqual exp1 exp2) = compA exp2 ++ compA exp1 ++ [Equ]
+compB (IntLe exp1 exp2) = compA exp2 ++ compA exp1 ++ [Le]
 
 compile :: Program -> Code
 compile [] = []
@@ -243,7 +241,8 @@ lexer (chr : rest) = error ("unexpected character: ’" ++ show (chr) ++ "’")
 
 testProgram :: Program
 -- y := 1; while ¬(x = 1) do (y := y ∗ x; x := x − 1)
-testProgram = [AssignIntStm "y" (IntValue 1), LoopStm (BoolNeg (IntEqual (BoolVariable "x") (IntValue2 1))) [AssignIntStm "y" (IntMult (IntVariable "y") (IntVariable "x")), AssignIntStm "x" (IntSub (IntVariable "x") (IntValue 1))]]
+testProgram = [AssignIntStm "y" (IntLit (IntValue 1)), LoopStm (BoolNeg (IntEqual (IntLit (IntVariable "x")) (IntLit (IntValue 1)))) [AssignIntStm "y" (IntMult (IntLit (IntVariable "y")) (IntLit (IntVariable "x"))), AssignIntStm "x" (IntSub (IntLit (IntVariable "x")) (IntLit (IntValue 1)))]]
+
 --testProgram = [AssignBoolStm "x" (BoolNeg (BoolEqual (BoolVariable "x") (BoolValue True)))]
 main :: IO ()
 main = do
