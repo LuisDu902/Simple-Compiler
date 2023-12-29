@@ -21,61 +21,115 @@ type Code = [Inst]
 
 run :: (Code, Stack, State) -> (Code, Stack, State)
 run ([], stack, state) = ([], stack, state)
--- run ([Add,rest], stack, state) = add(rest,stack,state)
+
+run (Push n : rest, stack, state) = run (rest, push stack n, state)
+run (Tru : rest, stack, state) = run (rest, tru stack, state)
+run (Fals : rest, stack, state) = run (rest, fals stack, state)
+
+run (Add : rest, stack, state) = run (rest, add stack, state)
+run (Mult : rest, stack, state) = run (rest, mult stack, state)
+run (Sub : rest, stack, state) = run (rest, sub stack, state)
+
+run (Equ : rest, stack, state) = run (rest, eq stack, state)
+run (Le : rest, stack, state) = run (rest, le stack, state)
+run (And : rest, stack, state) = run (rest, bAnd stack, state)
+run (Neg : rest, stack, state) = run (rest, neg stack, state)
+
+run (Fetch var : rest, stack, state) = run (rest, fetch stack state var, state)
+run (Store var : rest, stack, state) = run (rest, Stk.pop stack, store stack state var)
+run (Noop : rest, stack, state) = run (rest, stack, state)
+
+run (Branch yes no : rest, stack, state) = run (branch (rest, stack, state) yes no)
+run (Loop cond body : rest, stack, state) = run (loop rest cond body, stack, state)
+
+
+push :: Stack -> Integer -> Stack
+push stack n = Stk.push (Elm.I n) stack
+
+add :: Stack -> Stack 
+add stack = 
+  let elem1 = Stk.top stack 
+      elem2 = Stk.top (Stk.pop stack)
+      newStack = Stk.pop (Stk.pop stack)
+  in Stk.push ((Elm.+) elem1 elem2) newStack
+
+sub :: Stack -> Stack 
+sub stack = 
+  let elem1 = Stk.top stack 
+      elem2 = Stk.top (Stk.pop stack)
+      newStack = Stk.pop (Stk.pop stack)
+  in Stk.push ((Elm.-) elem1 elem2) newStack
+
+mult :: Stack -> Stack
+mult stack = 
+  let elem1 = Stk.top stack 
+      elem2 = Stk.top (Stk.pop stack)
+      newStack = Stk.pop (Stk.pop stack)
+  in Stk.push ((Elm.*) elem1 elem2) newStack
+
+tru :: Stack -> Stack
+tru stack = Stk.push (Elm.B True) stack
+
+fals :: Stack -> Stack
+fals stack = Stk.push (Elm.B False) stack
+
+bAnd :: Stack -> Stack
+bAnd stack = 
+  let elem1 = Stk.top stack 
+      elem2 = Stk.top (Stk.pop stack)
+      newStack = Stk.pop (Stk.pop stack)
+  in Stk.push ((Elm.&&) elem1 elem2) newStack
+
+eq :: Stack -> Stack
+eq stack = 
+  let elem1 = Stk.top stack 
+      elem2 = Stk.top (Stk.pop stack)
+      newStack = Stk.pop (Stk.pop stack)
+  in Stk.push ((Elm.==) elem1 elem2) newStack
+
+le :: Stack -> Stack
+le stack = 
+  let elem1 = Stk.top stack 
+      elem2 = Stk.top (Stk.pop stack)
+      newStack = Stk.pop (Stk.pop stack)
+  in Stk.push ((Elm.<=) elem1 elem2) newStack
+
+neg :: Stack -> Stack
+neg stack = 
+  let elem = Stk.top stack 
+      newStack = Stk.pop stack in 
+  Stk.push (Elm.not elem) newStack
+
+fetch :: Stack -> State -> String -> Stack
+fetch stack state var = 
+  let value = Stt.find var state
+  in case value of 
+    Just a -> Stk.push a stack
+    Nothing -> error "Runtime error"
+
+store :: Stack -> State -> String -> State
+store stack state var = 
+  let newVal = Stk.top stack 
+  in Stt.push var newVal state 
+ 
+branch :: (Code, Stack, State) -> Code -> Code -> (Code, Stack, State)
+branch (rest, stack, state) yes no = 
+  case (Stk.top stack) of 
+    Elm.B True -> (yes ++ rest, Stk.pop stack, state)
+    Elm.B False -> (no ++ rest, Stk.pop stack, state)
+    _ -> error "Runtime error"
+
+loop :: Code -> Code -> Code -> Code
+loop rest cond body = cond ++ [Branch (body ++ [Loop cond body]) [Noop]] ++ rest
+
 
 -- To help you test your assembler
 testAssembler :: Code -> (String, String)
 testAssembler code = (stack2Str stack, state2Str state)
   where (_,stack,state) = run (code, createEmptyStack, createEmptyState)
 
-add :: (Code, Stack, State) -> (Code, Stack, State) 
-add (code, stack, state) = (code, Stk.push ((Elm.+) (Stk.top stack) (Stk.top (Stk.pop stack))) (Stk.pop (Stk.pop stack)), state)
 
-sub :: (Code, Stack, State) -> (Code, Stack, State) 
-sub (code, stack, state) = (code, Stk.push ((Elm.-) (Stk.top stack) (Stk.top (Stk.pop stack))) (Stk.pop (Stk.pop stack)), state)
 
-mul :: (Code, Stack, State) -> (Code, Stack, State) 
-mul (code, stack, state) = (code, Stk.push ((Elm.*) (Stk.top stack) (Stk.top (Stk.pop stack))) (Stk.pop (Stk.pop stack)), state)
-
-eq :: (Code, Stack, State) -> (Code, Stack, State)
-eq (code, stack, state) = (code, Stk.push ((Elm.==) (Stk.top stack) (Stk.top (Stk.pop stack))) (Stk.pop (Stk.pop stack)), state)
-
-le :: (Code, Stack, State) -> (Code, Stack, State)
-le (code, stack, state) = (code, Stk.push ((Elm.<=) (Stk.top stack) (Stk.top (Stk.pop stack))) (Stk.pop (Stk.pop stack)), state)
-
-tru :: (Code, Stack, State) -> (Code, Stack, State)
-tru (code, stack, state) = (code, Stk.push (Elm.B True) stack, state)
-
-fals :: (Code, Stack, State) -> (Code, Stack, State) 
-fals (code, stack, state) = (code, Stk.push (Elm.B False) stack, state)
-
-push :: (Code, Stack, State) -> Integer -> (Code, Stack, State)
-push (code, stack, state) v = (code, Stk.push (Elm.I v) stack, state)
-
-neg :: (Code, Stack, State) -> (Code, Stack, State)
-neg (code, stack, state) = let s2 = Stk.pop stack in 
-  (code,Stk.push (Elm.not (Stk.top stack)) s2, state)
-
-fetch :: (Code, Stack, State) -> String -> (Code, Stack, State)
-fetch (code, stack, state) str = let n1 = Stk.top stack in 
-  let newVal = Stt.find str state in 
-  case newVal of 
-    Just a -> (code, Stk.push a stack, state)
-    Nothing -> error "Runtime error"
-
-store :: (Code, Stack, State) -> String -> (Code, Stack, State)
-store (code, stack, state) str = let newVal = Stk.top stack in 
-  let newState = Stt.push str newVal state in 
-  (code, Stk.pop stack, newState)
-
-branch :: (Code, Stack, State) -> Code -> Code -> (Code, Stack, State)
-branch (code, stack, state) yes no = case (Stk.top stack) of 
-  Elm.B True -> (yes ++ code, Stk.pop stack, state)
-  Elm.B False -> (no ++ code, Stk.pop stack, state)
-  _ -> error "Runtime error"
-
-noop :: (Code, Stack, State) -> (Code, Stack, State)
-noop (code, stack, state) = (code, stack, state)
 
 -- Examples:
 -- testAssembler [Push 10,Push 4,Push 3,Sub,Mult] == ("-10","")
@@ -97,4 +151,8 @@ noop (code, stack, state) = (code, stack, state)
 -- Part 2
 
 -- TODO: Define the types Aexp, Bexp, Stm and Program
+
+
+-- testAssembler ] == ("","fact=3628800,i=1")
+
 
