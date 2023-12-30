@@ -8,6 +8,14 @@ import Stack (Stack, createEmptyStack, stack2Str)
 import qualified State as Stt (push, find)
 import State (State, createEmptyState, state2Str)
 
+import Text.Parsec.Prim
+import Text.Parsec.Combinator
+import System.IO
+import Control.Monad
+import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec.Expr
+import Text.ParserCombinators.Parsec.Language
+import qualified Text.ParserCombinators.Parsec.Token as Token
 
 -- Part 1
 
@@ -16,10 +24,10 @@ data Inst =
   Push Integer | Add | Mult | Sub | Tru | Fals | Equ | Le | And | Neg | Fetch String | Store String | Noop |
   Branch Code Code | Loop Code Code
   deriving Show
-type Code = [Inst] 
+type Code = [Inst]
 
 
-run :: (Code, Stack, State) -> (Code, Stack, State)
+run :: (Code, Stack, State.State) -> (Code, Stack, State.State)
 run ([], stack, state) = ([], stack, state)
 
 run (Push n : rest, stack, state) = run (rest, push stack n, state)
@@ -46,75 +54,75 @@ run (Loop cond body : rest, stack, state) = run (loop rest cond body, stack, sta
 push :: Stack -> Integer -> Stack
 push stack n = Stk.push (Elm.I n) stack
 
-add :: Stack -> Stack 
-add stack = 
-  let elem1 = Stk.top stack 
+add :: Stack -> Stack
+add stack =
+  let elem1 = Stk.top stack
       elem2 = Stk.top (Stk.pop stack)
       newStack = Stk.pop (Stk.pop stack)
   in Stk.push ((Elm.+) elem1 elem2) newStack
 
-sub :: Stack -> Stack 
-sub stack = 
-  let elem1 = Stk.top stack 
+sub :: Stack -> Stack
+sub stack =
+  let elem1 = Stk.top stack
       elem2 = Stk.top (Stk.pop stack)
       newStack = Stk.pop (Stk.pop stack)
   in Stk.push ((Elm.-) elem1 elem2) newStack
 
 mult :: Stack -> Stack
-mult stack = 
-  let elem1 = Stk.top stack 
+mult stack =
+  let elem1 = Stk.top stack
       elem2 = Stk.top (Stk.pop stack)
       newStack = Stk.pop (Stk.pop stack)
   in Stk.push ((Elm.*) elem1 elem2) newStack
 
 tru :: Stack -> Stack
-tru stack = Stk.push (Elm.B True) stack
+tru = Stk.push (Elm.B True)
 
 fals :: Stack -> Stack
-fals stack = Stk.push (Elm.B False) stack
+fals = Stk.push (Elm.B False)
 
 bAnd :: Stack -> Stack
-bAnd stack = 
-  let elem1 = Stk.top stack 
+bAnd stack =
+  let elem1 = Stk.top stack
       elem2 = Stk.top (Stk.pop stack)
       newStack = Stk.pop (Stk.pop stack)
   in Stk.push ((Elm.&&) elem1 elem2) newStack
 
 eq :: Stack -> Stack
-eq stack = 
-  let elem1 = Stk.top stack 
+eq stack =
+  let elem1 = Stk.top stack
       elem2 = Stk.top (Stk.pop stack)
       newStack = Stk.pop (Stk.pop stack)
   in Stk.push ((Elm.==) elem1 elem2) newStack
 
 le :: Stack -> Stack
-le stack = 
-  let elem1 = Stk.top stack 
+le stack =
+  let elem1 = Stk.top stack
       elem2 = Stk.top (Stk.pop stack)
       newStack = Stk.pop (Stk.pop stack)
   in Stk.push ((Elm.<=) elem1 elem2) newStack
 
 neg :: Stack -> Stack
-neg stack = 
-  let elem = Stk.top stack 
-      newStack = Stk.pop stack in 
+neg stack =
+  let elem = Stk.top stack
+      newStack = Stk.pop stack in
   Stk.push (Elm.not elem) newStack
 
-fetch :: Stack -> State -> String -> Stack
-fetch stack state var = 
+fetch :: Stack -> State.State -> String -> Stack
+fetch stack state var =
   let value = Stt.find var state
-  in case value of 
+  in case value of
     Just a -> Stk.push a stack
     Nothing -> error "Runtime error"
 
-store :: Stack -> State -> String -> State
-store stack state var = 
-  let newVal = Stk.top stack 
-  in Stt.push var newVal state 
- 
-branch :: (Code, Stack, State) -> Code -> Code -> (Code, Stack, State)
-branch (rest, stack, state) yes no = 
-  case (Stk.top stack) of 
+store :: Stack -> State.State -> String -> State.State
+store stack state var =
+  let newVal = Stk.top stack
+  in Stt.push var newVal state
+
+branch :: (Code, Stack, State.State) -> Code -> Code -> (Code, Stack, State.State)
+branch (rest, stack, state) yes no =
+  case Stk.top stack of
     Elm.B True -> (yes ++ rest, Stk.pop stack, state)
     Elm.B False -> (no ++ rest, Stk.pop stack, state)
     _ -> error "Runtime error"
@@ -153,6 +161,165 @@ testAssembler code = (stack2Str stack, state2Str state)
 -- TODO: Define the types Aexp, Bexp, Stm and Program
 
 
--- testAssembler ] == ("","fact=3628800,i=1")
+data ALit = IntValue Integer | IntVariable String deriving Show
+
+data Aexp
+  = IntLit    ALit
+  | IntAdd    Aexp Aexp
+  | IntMult   Aexp Aexp
+  | IntSub    Aexp Aexp
+  deriving Show
+
+data BLit = BoolValue Bool | BoolVariable String deriving Show
+
+data Bexp
+  = BoolLit    BLit
+  | BoolNeg    Bexp
+  | BoolAnd    Bexp Bexp
+  | BoolEqual  Bexp Bexp
+  | IntEqual   Aexp Aexp
+  | IntLe      Aexp Aexp
+  deriving Show
+
+data Stm
+  = IfStm Bexp [Stm] [Stm]
+  | LoopStm Bexp [Stm]
+  | AssignStm String Aexp
+  deriving Show
+
+type Program = [Stm]
+
+compA :: Aexp -> Code
+compA (IntLit (IntValue n)) = [Push n]
+compA (IntLit (IntVariable var)) = [Fetch var]
+compA (IntAdd exp1 exp2) = compA exp2 ++ compA exp1 ++ [Add]    
+compA (IntMult exp1 exp2) = compA exp2 ++ compA exp1 ++ [Mult]
+compA (IntSub exp1 exp2) = compA exp2 ++ compA exp1 ++ [Sub]
+
+compB :: Bexp -> Code
+compB (BoolLit (BoolValue n))
+  | n         = [Tru]
+  | otherwise = [Fals]
+compB (BoolLit (BoolVariable var)) = [Fetch var]
+compB (BoolNeg exp) = compB exp ++ [Neg]
+compB (BoolAnd exp1 exp2) = compB exp2 ++ compB exp1 ++ [And]
+compB (BoolEqual exp1 exp2) = compB exp2 ++ compB exp1 ++ [Equ]
+compB (IntEqual exp1 exp2) = compA exp2 ++ compA exp1 ++ [Equ]
+compB (IntLe exp1 exp2) = compA exp2 ++ compA exp1 ++ [Le]
+
+compile :: Program -> Code
+compile [] = []
+compile (statement : rest) =
+  case statement of
+    AssignStm var aExp -> compA aExp ++ [Store var] ++ compile rest
+    IfStm cond ifBlock elseBlock -> compB cond ++ [Branch (compile ifBlock) (compile elseBlock)] ++ compile rest
+    LoopStm cond loopBody -> Loop (compB cond) (compile loopBody) : compile rest
+
+languageDefinition =
+   emptyDef { Token.identStart      = letter
+            , Token.identLetter     = alphaNum
+            , Token.reservedNames   = [ "if"
+                                      , "then"
+                                      , "else"
+                                      , "while"
+                                      , "do"
+                                      , "True"
+                                      , "False"
+                                      , "not"
+                                      , "and"
+                                      ]
+            , Token.reservedOpNames = ["+", "-", "*", ":="
+                                      ,"==", "=", "<=", "and", "not"
+                                      , ":="
+                                      ]
+            }
+
+lexer = Token.makeTokenParser languageDefinition
 
 
+variable = Token.identifier lexer
+reserved   = Token.reserved   lexer
+reservedOp = Token.reservedOp lexer
+parens     = Token.parens     lexer
+integer    = Token.integer    lexer
+semiColon       = Token.semi       lexer
+whiteSpace = Token.whiteSpace lexer
+
+
+statementsParser = do
+  list <- sepEndBy1 statementParser semiColon
+  return $ list
+
+statementParser :: Parser Stm
+statementParser =  parens statementParser
+           <|> ifParser
+           <|> loopParser
+           <|> assignPaser
+
+
+ifParser :: Parser Stm
+ifParser =
+  do reserved "if"
+     cond  <- boolExp
+     reserved "then"
+     ifBlock <- statementsParser
+     reserved "else"
+     elseBlock <- statementsParser
+     return (IfStm cond ifBlock elseBlock)
+
+loopParser :: Parser Stm
+loopParser =
+  do reserved "while"
+     cond <- boolExp
+     reserved "do"
+     loopBody <- statementsParser
+     return (LoopStm cond loopBody)
+
+assignPaser :: Parser Stm
+assignPaser =
+  do var  <- variable
+     reservedOp ":="
+     value <- aritExp
+     return (AssignStm var value)
+
+aritExp :: Parser Aexp
+aritExp = buildExpressionParser aOperators aTerm
+
+boolExp :: Parser Bexp
+boolExp = buildExpressionParser bOperators bTerm
+
+
+aOperators = [ [Infix  (reservedOp "*"   >> return IntMult) AssocLeft]
+             , [Infix  (reservedOp "+"   >> return IntAdd) AssocLeft,
+                Infix  (reservedOp "-"   >> return IntSub) AssocLeft]
+              ]
+
+bOperators = [ [Prefix (reservedOp "not" >> return BoolNeg)          ]
+             , [Infix  (reservedOp "and" >> return BoolAnd) AssocLeft]
+             ]
+
+
+intParser :: Parser ALit
+intParser = liftM IntValue integer <|> liftM IntVariable variable
+
+
+aTerm =  parens aritExp
+      <|> liftM IntLit intParser
+bTerm =  parens boolExp
+     <|> (reserved "True"  >> return (BoolLit (BoolValue True)) )
+     <|> (reserved "False" >> return (BoolLit (BoolValue False)) )
+
+
+myParser = whiteSpace >> statementsParser
+
+
+parseString :: String -> Program
+parseString str =
+  case parse myParser "" str of
+    Left e  -> error $ show e
+    Right r -> r
+
+xD = parseString "x := 42; if True and True then x := 1; else x := 33; x := x+1;"
+
+
+jesus = run(compile xD, createEmptyStack, createEmptyState)
