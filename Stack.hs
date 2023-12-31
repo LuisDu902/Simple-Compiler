@@ -13,11 +13,11 @@ push a s = a:s
 
 pop :: Stack -> Stack
 pop (a:s) = s
-pop _ = error "Stack.pop: the stack is empty"
+pop _ = error "Run-time error"
 
 top :: Stack -> Value
 top (a:s) = a
-top _ = error "Stack.top: the stack is empty"
+top _ = error "Run-time error"
 
 stack2Str :: Stack -> String
 stack2Str [] = ""

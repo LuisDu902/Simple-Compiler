@@ -112,7 +112,7 @@ fetch stack state var =
   let value = Stt.find var state
   in case value of
     Just a -> Stk.push a stack
-    Nothing -> error "Runtime error"
+    Nothing -> error "Run-time error"
 
 store :: Stack -> State.State -> String -> State.State
 store stack state var =
@@ -124,7 +124,7 @@ branch (rest, stack, state) yes no =
   case Stk.top stack of
     Elm.B True -> (yes ++ rest, Stk.pop stack, state)
     Elm.B False -> (no ++ rest, Stk.pop stack, state)
-    _ -> error "Runtime error"
+    _ -> error "Run-time error"
 
 loop :: Code -> Code -> Code -> Code
 loop rest cond body = cond ++ [Branch (body ++ [Loop cond body]) [Noop]] ++ rest
@@ -242,12 +242,16 @@ semiColon       = Token.semi       lexer
 whiteSpace = Token.whiteSpace lexer
 
 
-statementsParser = do
-  list <- Parsec.sepEndBy statementParser semiColon
-  return $ list
+
+statementsParser = parens statementsParser
+  Parsec.<|> Parsec.many statementParser 
+
+blockParser = parens statementsParser <* semiColon Parsec.<|> fmap (:[]) statementParser
+
+thenParser = parens statementsParser Parsec.<|> fmap (:[]) statementParser
 
 statementParser :: Parser Stm
-statementParser =  parens statementParser 
+statementParser =  parens statementParser
            Parsec.<|> ifParser
            Parsec.<|> loopParser
            Parsec.<|> assignParser
@@ -255,35 +259,29 @@ statementParser =  parens statementParser
 
 ifParser :: Parser Stm
 ifParser =
-  do reserved "if"
-     cond  <- boolExp
-     reserved "then"
-     ifBlock <- statementsParser
-     reserved "else"
-     elseBlock <- statementParser
-     return (IfStm cond ifBlock [elseBlock])
+  do  reserved "if"
+      cond  <- boolExp
+      reserved "then"
+      ifBlock <- thenParser
+      reserved "else"
+      elseBlock <- blockParser
+      return (IfStm cond ifBlock elseBlock)
 
 
 loopParser :: Parser Stm
-loopParser = do
-  reserved "while"
-  cond <- boolExp
-  reserved "do"
-  hasParens <- Parsec.lookAhead (Parsec.char '(')
-  loopBody <- if hasParens == '('
-               then do
-                 body <- statementsParser <* Parsec.char ')'
-                 return (LoopStm cond body)
-               else do
-                 body <- statementParser
-                 return (LoopStm cond [body])
-  return loopBody
+loopParser =
+  do  reserved "while"
+      cond <- boolExp
+      reserved "do"
+      loopBody <- blockParser
+      return (LoopStm cond loopBody)
 
 assignParser :: Parser Stm
 assignParser =
   do var  <- variable
      reservedOp ":="
      value <- aritExp
+     semiColon
      return (AssignStm var value)
 
 aritExp :: Parser Aexp
@@ -331,26 +329,24 @@ myParser = whiteSpace >> statementsParser
 parse :: String -> Program
 parse str =
   case Parsec.parse (myParser <* Parsec.eof) "" str of
-    Left e  -> error "Runtime error"
+    Left e -> error $ show e
     Right r -> r
 
 testParser :: String -> (String, String)
 testParser programCode = (stack2Str stack, state2Str state)
-  where (_,stack,state) = run(compile (parse programCode), createEmptyStack, createEmptyState)
+  where (_,stack,state) = run (compile (parse programCode), createEmptyStack, createEmptyState)
 
 
-a = testParser "x := 5; x := x - 1;" == ("","x=4") 
-b = testParser "x := 0 - 2;" == ("","x=-2") 
+a = testParser "x := 5; x := x - 1;" == ("","x=4")
+b = testParser "x := 0 - 2;" == ("","x=-2")
 c = testParser "if (not True and 2 <= 5 = 3 == 4) then x :=1; else y := 2;" == ("","y=2")
 
-
--- testParser "x := 42; if x <= 43 then x := 1; else (x := 33; x := x+1;);" == ("","x=1") x
--- testParser "x := 42; if x <= 43 then x := 1; else x := 33; x := x+1;" == ("","x=2") x
--- testParser "x := 42; if x <= 43 then x := 1; else x := 33; x := x+1; z := x+x;" == ("","x=2,z=4") x
--- testParser "x := 44; if x <= 43 then x := 1; else (x := 33; x := x+1;); y := x*2;" == ("","x=34,y=68") x
--- testParser "x := 42; if x <= 43 then (x := 33; x := x+1;) else x := 1;" == ("","x=34")
-d = testParser "if (1 == 0+1 = 2+1 == 3) then x := 1; else x := 2;" == ("","x=1")
-e = testParser "if (1 == 0+1 = (2+1 == 4)) then x := 1; else x := 2;" == ("","x=2")
-f = testParser "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);" == ("","x=2,y=-10,z=6")
-
--- testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")
+d = testParser "x := 42; if x <= 43 then x := 1; else (x := 33; x := x+1;);" == ("","x=1")
+e = testParser "x := 42; if x <= 43 then x := 1; else x := 33; x := x+1;" == ("","x=2")
+f = testParser "x := 42; if x <= 43 then x := 1; else x := 33; x := x+1; z := x+x;" == ("","x=2,z=4")
+g = testParser "x := 44; if x <= 43 then x := 1; else (x := 33; x := x+1;); y := x*2;" == ("","x=34,y=68")
+h = testParser "x := 42; if x <= 43 then (x := 33; x := x+1;) else x := 1;" == ("","x=34")
+i = testParser "if (1 == 0+1 = 2+1 == 3) then x := 1; else x := 2;" == ("","x=1")
+j = testParser "if (1 == 0+1 = (2+1 == 4)) then x := 1; else x := 2;" == ("","x=2")
+k = testParser "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);" == ("","x=2,y=-10,z=6")
+l = testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")
