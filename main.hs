@@ -8,14 +8,13 @@ import Stack (Stack, createEmptyStack, stack2Str)
 import qualified State as Stt (push, find)
 import State (State, createEmptyState, state2Str)
 
-import Text.Parsec.Prim
-import Text.Parsec.Combinator
 import System.IO
 import Control.Monad
-import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec ( alphaNum, lower, Parser )
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Language
 import qualified Text.ParserCombinators.Parsec.Token as Token
+import qualified Text.Parsec as Parsec
 
 -- Part 1
 
@@ -170,10 +169,8 @@ data Aexp
   | IntSub    Aexp Aexp
   deriving Show
 
-data BLit = BoolValue Bool | BoolVariable String deriving Show
-
 data Bexp
-  = BoolLit    BLit
+  = BoolLit    Bool
   | BoolNeg    Bexp
   | BoolAnd    Bexp Bexp
   | BoolEqual  Bexp Bexp
@@ -197,10 +194,9 @@ compA (IntMult exp1 exp2) = compA exp2 ++ compA exp1 ++ [Mult]
 compA (IntSub exp1 exp2) = compA exp2 ++ compA exp1 ++ [Sub]
 
 compB :: Bexp -> Code
-compB (BoolLit (BoolValue n))
+compB (BoolLit n)
   | n         = [Tru]
   | otherwise = [Fals]
-compB (BoolLit (BoolVariable var)) = [Fetch var]
 compB (BoolNeg exp) = compB exp ++ [Neg]
 compB (BoolAnd exp1 exp2) = compB exp2 ++ compB exp1 ++ [And]
 compB (BoolEqual exp1 exp2) = compB exp2 ++ compB exp1 ++ [Equ]
@@ -216,7 +212,7 @@ compile (statement : rest) =
     LoopStm cond loopBody -> Loop (compB cond) (compile loopBody) : compile rest
 
 languageDefinition =
-   emptyDef { Token.identStart      = letter
+   emptyDef { Token.identStart      = lower
             , Token.identLetter     = alphaNum
             , Token.reservedNames   = [ "if"
                                       , "then"
@@ -228,7 +224,7 @@ languageDefinition =
                                       , "not"
                                       , "and"
                                       ]
-            , Token.reservedOpNames = ["+", "-", "*", ":="
+            , Token.reservedOpNames = ["+", "-", "*"
                                       ,"==", "=", "<=", "and", "not"
                                       , ":="
                                       ]
@@ -247,14 +243,14 @@ whiteSpace = Token.whiteSpace lexer
 
 
 statementsParser = do
-  list <- sepEndBy1 statementParser semiColon
+  list <- Parsec.sepEndBy statementParser semiColon
   return $ list
 
 statementParser :: Parser Stm
-statementParser =  parens statementParser
-           <|> ifParser
-           <|> loopParser
-           <|> assignParser
+statementParser =  parens statementParser 
+           Parsec.<|> ifParser
+           Parsec.<|> loopParser
+           Parsec.<|> assignParser
 
 
 ifParser :: Parser Stm
@@ -264,16 +260,24 @@ ifParser =
      reserved "then"
      ifBlock <- statementsParser
      reserved "else"
-     elseBlock <- statementsParser
-     return (IfStm cond ifBlock elseBlock)
+     elseBlock <- statementParser
+     return (IfStm cond ifBlock [elseBlock])
+
 
 loopParser :: Parser Stm
-loopParser =
-  do reserved "while"
-     cond <- boolExp
-     reserved "do"
-     loopBody <- statementsParser
-     return (LoopStm cond loopBody)
+loopParser = do
+  reserved "while"
+  cond <- boolExp
+  reserved "do"
+  hasParens <- Parsec.lookAhead (Parsec.char '(')
+  loopBody <- if hasParens == '('
+               then do
+                 body <- statementsParser <* Parsec.char ')'
+                 return (LoopStm cond body)
+               else do
+                 body <- statementParser
+                 return (LoopStm cond [body])
+  return loopBody
 
 assignParser :: Parser Stm
 assignParser =
@@ -301,15 +305,15 @@ bOperators = [ [Prefix (reservedOp "not" >> return BoolNeg)          ],
 
 
 intParser :: Parser ALit
-intParser = fmap IntValue integer <|> fmap IntVariable variable
+intParser = fmap IntValue integer Parsec.<|> fmap IntVariable variable
 
 
 aTerm =  parens aritExp
-      <|> fmap IntLit intParser
+      Parsec.<|> fmap IntLit intParser
 bTerm =  parens boolExp
-     <|> (reserved "True"  >> return (BoolLit (BoolValue True)) )
-     <|> (reserved "False" >> return (BoolLit (BoolValue False)) )
-     <|> intCompareParser
+     Parsec.<|> (reserved "True"  >> return (BoolLit True) )
+     Parsec.<|> (reserved "False" >> return (BoolLit False) )
+     Parsec.<|> intCompareParser
 
 
 intCompareParser =
@@ -319,18 +323,34 @@ intCompareParser =
       return $ op a1 a2
 
 comp =   (reservedOp "<=" >> return IntLe)
-          <|> (reservedOp "==" >> return IntEqual)
+          Parsec.<|> (reservedOp "==" >> return IntEqual)
 
 myParser = whiteSpace >> statementsParser
 
 
-parseString :: String -> Program
-parseString str =
-  case parse myParser "" str of
-    Left e  -> error $ show e
+parse :: String -> Program
+parse str =
+  case Parsec.parse (myParser <* Parsec.eof) "" str of
+    Left e  -> error "Runtime error"
     Right r -> r
 
-xD = parseString "if (2 <= 5 = 3 == 4) then x :=1; else y := 2;"
+testParser :: String -> (String, String)
+testParser programCode = (stack2Str stack, state2Str state)
+  where (_,stack,state) = run(compile (parse programCode), createEmptyStack, createEmptyState)
 
 
-jesus = run (compile xD, createEmptyStack, createEmptyState)
+a = testParser "x := 5; x := x - 1;" == ("","x=4") 
+b = testParser "x := 0 - 2;" == ("","x=-2") 
+c = testParser "if (not True and 2 <= 5 = 3 == 4) then x :=1; else y := 2;" == ("","y=2")
+
+
+-- testParser "x := 42; if x <= 43 then x := 1; else (x := 33; x := x+1;);" == ("","x=1") x
+-- testParser "x := 42; if x <= 43 then x := 1; else x := 33; x := x+1;" == ("","x=2") x
+-- testParser "x := 42; if x <= 43 then x := 1; else x := 33; x := x+1; z := x+x;" == ("","x=2,z=4") x
+-- testParser "x := 44; if x <= 43 then x := 1; else (x := 33; x := x+1;); y := x*2;" == ("","x=34,y=68") x
+-- testParser "x := 42; if x <= 43 then (x := 33; x := x+1;) else x := 1;" == ("","x=34")
+d = testParser "if (1 == 0+1 = 2+1 == 3) then x := 1; else x := 2;" == ("","x=1")
+e = testParser "if (1 == 0+1 = (2+1 == 4)) then x := 1; else x := 2;" == ("","x=2")
+f = testParser "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);" == ("","x=2,y=-10,z=6")
+
+-- testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")

@@ -13,7 +13,10 @@ push :: String -> Value -> State -> State
 push var value state = Map.insert var value state
 
 state2Str :: State -> String
-state2Str = undefined
+state2Str state
+    | str Prelude.== "" = ""
+    | otherwise = init str
+        where str = fst $ Map.mapAccumWithKey (\ acc key value -> (acc ++ key ++ "=" ++ show value ++ ",", Nothing)) "" state
 {-
 state2Str _ = []
 state2Str (a:[]) = show a
