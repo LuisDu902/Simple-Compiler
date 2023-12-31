@@ -192,7 +192,7 @@ type Program = [Stm]
 compA :: Aexp -> Code
 compA (IntLit (IntValue n)) = [Push n]
 compA (IntLit (IntVariable var)) = [Fetch var]
-compA (IntAdd exp1 exp2) = compA exp2 ++ compA exp1 ++ [Add]    
+compA (IntAdd exp1 exp2) = compA exp2 ++ compA exp1 ++ [Add]
 compA (IntMult exp1 exp2) = compA exp2 ++ compA exp1 ++ [Mult]
 compA (IntSub exp1 exp2) = compA exp2 ++ compA exp1 ++ [Sub]
 
@@ -254,7 +254,7 @@ statementParser :: Parser Stm
 statementParser =  parens statementParser
            <|> ifParser
            <|> loopParser
-           <|> assignPaser
+           <|> assignParser
 
 
 ifParser :: Parser Stm
@@ -275,8 +275,8 @@ loopParser =
      loopBody <- statementsParser
      return (LoopStm cond loopBody)
 
-assignPaser :: Parser Stm
-assignPaser =
+assignParser :: Parser Stm
+assignParser =
   do var  <- variable
      reservedOp ":="
      value <- aritExp
@@ -294,21 +294,32 @@ aOperators = [ [Infix  (reservedOp "*"   >> return IntMult) AssocLeft]
                 Infix  (reservedOp "-"   >> return IntSub) AssocLeft]
               ]
 
-bOperators = [ [Prefix (reservedOp "not" >> return BoolNeg)          ]
-             , [Infix  (reservedOp "and" >> return BoolAnd) AssocLeft]
+bOperators = [ [Prefix (reservedOp "not" >> return BoolNeg)          ],
+                [Infix (reservedOp "=" >> return BoolEqual) AssocLeft         ],
+              [Infix  (reservedOp "and" >> return BoolAnd) AssocLeft]
              ]
 
 
 intParser :: Parser ALit
-intParser = liftM IntValue integer <|> liftM IntVariable variable
+intParser = fmap IntValue integer <|> fmap IntVariable variable
 
 
 aTerm =  parens aritExp
-      <|> liftM IntLit intParser
+      <|> fmap IntLit intParser
 bTerm =  parens boolExp
      <|> (reserved "True"  >> return (BoolLit (BoolValue True)) )
      <|> (reserved "False" >> return (BoolLit (BoolValue False)) )
+     <|> intCompareParser
 
+
+intCompareParser =
+   do a1 <- aritExp
+      op <- comp
+      a2 <- aritExp
+      return $ op a1 a2
+
+comp =   (reservedOp "<=" >> return IntLe)
+          <|> (reservedOp "==" >> return IntEqual)
 
 myParser = whiteSpace >> statementsParser
 
@@ -319,7 +330,7 @@ parseString str =
     Left e  -> error $ show e
     Right r -> r
 
-xD = parseString "x := 42; if True and True then x := 1; else x := 33; x := x+1;"
+xD = parseString "if (2 <= 5 = 3 == 4) then x :=1; else y := 2;"
 
 
-jesus = run(compile xD, createEmptyStack, createEmptyState)
+jesus = run (compile xD, createEmptyStack, createEmptyState)
