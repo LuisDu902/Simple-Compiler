@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>README.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="simple-language-compiler-and-interpreter">Simple language compiler and interpreter</h1>
+<p>This project was developed for the course <strong>Functional and Logic Programming</strong>, with the intent to write a machine for a low level set of instructions and the appropriate compiler for the language that is intended to operate with it.</p>
+<h2 id="group-information">Group Information</h2>
+<p><strong>Class</strong>: 3LEIC14</p>
+<p><strong>Group</strong>: T14_G06</p>
+<p><strong>Members</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Student Number</th>
+<th>Name</th>
+<th>Contribution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>202105385</td>
+<td>Luís Du</td>
+<td>34 %</td>
+</tr>
+<tr>
+<td>202005832</td>
+<td>Luís Sousa</td>
+<td>33 %</td>
+</tr>
+<tr>
+<td>202108783</td>
+<td>Tiago Gouveia</td>
+<td>33 %</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-instructions-and-structures">1. Instructions and Structures</h2>
+<h3 id="11-data-types">1.1. Data types</h3>
+<p>In order to make sure the language had employed the correct type restrictions, we created a type called <code>Value</code>, employed in both the <code>Stack</code> and the <code>State</code>.</p>
+<pre class="hljs"><code><div><span class="hljs-class"><span class="hljs-keyword">data</span> <span class="hljs-type">Value</span> = <span class="hljs-type">I</span> <span class="hljs-type">Integer</span> | <span class="hljs-type">B</span> <span class="hljs-type">Bool</span></span>
+</div></code></pre>
+<p>Operators were overloaded to filter out incorrect usage, and restrict them to the correspondent types, i.e. trying to <code>add</code> Booleans or trying to <code>neg</code> an Integer.</p>
+<h4 id="111-stack">1.1.1. Stack</h4>
+<p>The <strong>stack</strong> is one of the two fundamental structures of any machine, used to store values to perform operations, different from the state because these arent permanent, and are constantly under change.</p>
+<p>It is defined by <code>[Value]</code>, a list of our custom type, <code>Value</code>. Despite being a list, we only interact with it through stack-like operations: <code>push</code> and <code>pop</code>, therefore making it essentially a stack.</p>
+<p>In addition to the aforementioned functions, some utility functions are present to help the usage of the stack, without violating the base concept:</p>
+<br>
+<br>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>createEmptyStack</code></td>
+<td>Creates an empty stack</td>
+</tr>
+<tr>
+<td><code>top</code></td>
+<td>Displays the top element of the stack</td>
+</tr>
+<tr>
+<td><code>size</code></td>
+<td>Displays the number of elements on the stack</td>
+</tr>
+<tr>
+<td><code>pop</code></td>
+<td>Removes the top element from the stack</td>
+</tr>
+<tr>
+<td><code>push</code></td>
+<td>Adds an element to the top of the stack</td>
+</tr>
+<tr>
+<td><code>stack2Str</code></td>
+<td>Auxiliary function used to display the stack, useful for debugging and testing.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="112-state">1.1.2. State</h3>
+<p>The <strong>state</strong> is the other fundamental structure, used to store keys and values of variables the code instructs it to store for later, not removing them upon consulting the values, and suffering less mutations on average than the stack.</p>
+<p>It is defined with the help of the library <code>Data.Map</code>, mapping <code>String</code>, the keys, to <code>Value</code>, the values.</p>
+<p>We implemented a series of functions that help us interact and navegate the stack as we need it, always basing ourselves on the library's supplied functions:</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>createEmptyState</code></td>
+<td>Creates an empty state calling <code>Data.Map.empty</code></td>
+</tr>
+<tr>
+<td><code>push</code></td>
+<td>Calls <code>Data.Map.insert</code> to insert a new key value pair into the map, or updating an existing one</td>
+</tr>
+<tr>
+<td><code>find</code></td>
+<td>Calls <code>Data.Map.lookup</code> to return the value held by the desired key</td>
+</tr>
+<tr>
+<td><code>state2Str</code></td>
+<td>Auxiliary function used to display the state, useful for debugging and testing. Accomplished by usage of the function <code>Data.Map.mapAccumWithKey</code> and a lambda function to navegate through the map and synthesise it in one string</td>
+</tr>
+</tbody>
+</table>
+<h3 id="12-operations">1.2. Operations</h3>
+<p>The following are operations that our machine is able to process and execute, with the help of the stack and the state as defined above:</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>add</code></td>
+<td>Adds two integers together and pushes the result to the stack</td>
+</tr>
+<tr>
+<td><code>mult</code></td>
+<td>Multiplies two integers and pushes the result to the stack</td>
+</tr>
+<tr>
+<td><code>sub</code></td>
+<td>Subtracts two integers and pushes the result to the stack</td>
+</tr>
+<tr>
+<td><code>tru</code></td>
+<td>Pushes <code>True</code> to the stack, part of the statement assessment</td>
+</tr>
+<tr>
+<td><code>fals</code></td>
+<td>Pushes <code>False</code> to the stack, part of the statement assessment</td>
+</tr>
+<tr>
+<td><code>equ</code></td>
+<td>Statement assessment that checks if two <code>Value</code>s of the same type are equal and pushes the result to the stack</td>
+</tr>
+<tr>
+<td><code>le</code></td>
+<td>Statement assessment that checks if a <code>Value Integer</code> is less or equal to another and pushes the result to the stack</td>
+</tr>
+<tr>
+<td><code>bAnd</code></td>
+<td>Boolean operation that checks if both operands are <code>True</code> and pushes the result to the stack</td>
+</tr>
+<tr>
+<td><code>neg</code></td>
+<td>Boolean operation that reverses a boolean and pushes the result to the stack</td>
+</tr>
+<tr>
+<td><code>fetch</code></td>
+<td>Statement that retrieves a <code>Value</code> from the state via a key and pushes it to the stack</td>
+</tr>
+<tr>
+<td><code>store</code></td>
+<td>Statement that stores a <code>Value</code> under a key in the state</td>
+</tr>
+<tr>
+<td><code>noop</code></td>
+<td>Dummy instruction that returns the input stack and store</td>
+</tr>
+<tr>
+<td><code>branch</code></td>
+<td>Statement that selects which code to execute based on the top value of the stack, mandatorily a boolean</td>
+</tr>
+<tr>
+<td><code>loop</code></td>
+<td>Statement that checks a supplied condition and executes the code until the condition isn't true</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="2-imperative-programming-language">2. Imperative Programming Language</h2>
+<p>Once we have our machine defined, it becomes possible to develop a compact imperative language. This language operates with arithmetic and boolean expressions, allowing statements in the form of assignments such as x := a, sequences of statements denoted by (instr1 ; instr2), conditional statements if-then-else, and iterative constructs with while loops.</p>
+<h3 id="21-expressions-and-statements">2.1. Expressions and Statements</h3>
+<p>The following data types were used to handle both arithmetic and boolean expressions, as well as statements.</p>
+<h4 id="211-arithmetic-expressions---aexp">2.1.1. Arithmetic expressions - <em>Aexp</em></h4>
+<p><code>ALit</code> is a sum type that represents the literals used in arithmetic expressions, that can be either integers (<code>IntValue</code>) or variables (<code>IntVariable</code>).</p>
+<pre class="hljs"><code><div><span class="hljs-class"><span class="hljs-keyword">data</span> <span class="hljs-type">ALit</span> = <span class="hljs-type">IntValue</span> <span class="hljs-type">Integer</span> | <span class="hljs-type">IntVariable</span> <span class="hljs-type">String</span></span>
+</div></code></pre>
+<p><code>Aexp</code> is a recursive algebraic data type that encompasses various forms of arithmetic expressions, including literals (<code>IntLit</code>), addition (<code>IntAdd</code>), multiplication (<code>IntMult</code>), and subtraction (<code>IntSub</code>).</p>
+<br>
+<br>
+<br>
+<pre class="hljs"><code><div><span class="hljs-class"><span class="hljs-keyword">data</span> <span class="hljs-type">Aexp</span></span>
+  = <span class="hljs-type">IntLit</span>    <span class="hljs-type">ALit</span>
+  | <span class="hljs-type">IntAdd</span>    <span class="hljs-type">Aexp</span> <span class="hljs-type">Aexp</span>
+  | <span class="hljs-type">IntMult</span>   <span class="hljs-type">Aexp</span> <span class="hljs-type">Aexp</span>
+  | <span class="hljs-type">IntSub</span>    <span class="hljs-type">Aexp</span> <span class="hljs-type">Aexp</span>
+</div></code></pre>
+<h4 id="212-boolean-expressions---bexp">2.1.2. Boolean expressions - <em>Bexp</em></h4>
+<p>Similarly to arithmetic expressions, boolean expression are defined by <code>Bexp</code>, a recursive data type that encompasses various forms of boolean expressions, including boolean literals <code>BoolLit</code>, negation <code>NOT</code>, logical <code>AND</code> operations, equality comparisons for both boolean (<code>BoolEqual</code>) and arithmetic expressions (<code>IntEqual</code>), as well as a comparison for less-or-equal-to (<code>IntLe</code>) between arithmetic expressions.</p>
+<pre class="hljs"><code><div><span class="hljs-class"><span class="hljs-keyword">data</span> <span class="hljs-type">Bexp</span></span>
+  = <span class="hljs-type">BoolLit</span>    <span class="hljs-type">Bool</span>
+  | <span class="hljs-type">BoolNeg</span>    <span class="hljs-type">Bexp</span>
+  | <span class="hljs-type">BoolAnd</span>    <span class="hljs-type">Bexp</span> <span class="hljs-type">Bexp</span>
+  | <span class="hljs-type">BoolEqual</span>  <span class="hljs-type">Bexp</span> <span class="hljs-type">Bexp</span>
+  | <span class="hljs-type">IntEqual</span>   <span class="hljs-type">Aexp</span> <span class="hljs-type">Aexp</span>
+  | <span class="hljs-type">IntLe</span>      <span class="hljs-type">Aexp</span> <span class="hljs-type">Aexp</span>
+</div></code></pre>
+<h4 id="213-statements---stm">2.1.3. Statements - <em>Stm</em></h4>
+<p>In our language, statements could be:</p>
+<ul>
+<li><code>IfStm</code> - if then else statements, consisting of a boolean expression, followed by two distinct lists of statements: one for the if condition and another for the else condition;</li>
+<li><code>AssignStm</code> - Assignments of the form variable := arithmetic expression;</li>
+<li><code>LoopStm</code> - while loop, consisting of boolean expression followed by a sequence of statements, forming the body of the while loop;</li>
+<li><code>SequenceOfStm</code> - a list of statements</li>
+</ul>
+<pre class="hljs"><code><div><span class="hljs-class"><span class="hljs-keyword">data</span> <span class="hljs-type">Stm</span></span>
+  = <span class="hljs-type">IfStm</span> <span class="hljs-type">Bexp</span> [<span class="hljs-type">Stm</span>] [<span class="hljs-type">Stm</span>]
+  | <span class="hljs-type">LoopStm</span> <span class="hljs-type">Bexp</span> [<span class="hljs-type">Stm</span>]
+  | <span class="hljs-type">AssignStm</span> <span class="hljs-type">String</span> <span class="hljs-type">Aexp</span>
+  | <span class="hljs-type">SequenceOfStm</span> [<span class="hljs-type">Stm</span>]
+</div></code></pre>
+<h4 id="214-program">2.1.4. Program</h4>
+<p><code>Program</code> is simply a list of statements:</p>
+<p>type Program = [Stm]</p>
+<br>
+<h3 id="22-compiler">2.2. Compiler</h3>
+<p>To define a compiler from a program in this small imperative language into a list of machine instructions, we can use two auxiliary functions which compile arithmetic and
+boolean expressions, respectively.</p>
+<h4 id="221-compiler-of-arithmetic-expressions---compa">2.2.1. Compiler of arithmetic expressions - <em>compA</em></h4>
+<p>In arithmetic expressions, the code generated for binary expressions consists of the code for the <code>right argument</code> followed by that for the <code>left argument</code> and, finally, the appropriate <code>instruction for the operator</code>. Hence, we can implement the following recursive structure:</p>
+<pre class="hljs"><code><div><span class="hljs-title">compA</span> (<span class="hljs-type">IntAdd</span> exp1 exp2) = compA exp2 ++ compA exp1 ++ [<span class="hljs-type">Add</span>]
+<span class="hljs-title">compA</span> (<span class="hljs-type">IntMult</span> exp1 exp2) = compA exp2 ++ compA exp1 ++ [<span class="hljs-type">Mult</span>]
+<span class="hljs-title">compA</span> (<span class="hljs-type">IntSub</span> exp1 exp2) = compA exp2 ++ compA exp1 ++ [<span class="hljs-type">Sub</span>]
+</div></code></pre>
+<p>As our base case, we could either have a variable or an integer, leading to a <code>Fetch</code> or <code>Push</code> instruction, respectively:</p>
+<pre class="hljs"><code><div><span class="hljs-title">compA</span> (<span class="hljs-type">IntLit</span> (<span class="hljs-type">IntValue</span> n)) = [<span class="hljs-type">Push</span> n]
+<span class="hljs-title">compA</span> (<span class="hljs-type">IntLit</span> (<span class="hljs-type">IntVariable</span> var)) = [<span class="hljs-type">Fetch</span> var]
+</div></code></pre>
+<h4 id="222-compiler-of-boolean-expressions---compb">2.2.2. Compiler of boolean expressions - <em>compB</em></h4>
+<p>Analogously, boolean expressions can be compiled to code using recursion:</p>
+<pre class="hljs"><code><div><span class="hljs-title">compB</span> (<span class="hljs-type">BoolNeg</span> exp) = compB exp ++ [<span class="hljs-type">Neg</span>]
+<span class="hljs-title">compB</span> (<span class="hljs-type">BoolAnd</span> exp1 exp2) = compB exp2 ++ compB exp1 ++ [<span class="hljs-type">And</span>]
+<span class="hljs-title">compB</span> (<span class="hljs-type">BoolEqual</span> exp1 exp2) = compB exp2 ++ compB exp1 ++ [<span class="hljs-type">Equ</span>]
+<span class="hljs-title">compB</span> (<span class="hljs-type">IntEqual</span> exp1 exp2) = compA exp2 ++ compA exp1 ++ [<span class="hljs-type">Equ</span>]
+<span class="hljs-title">compB</span> (<span class="hljs-type">IntLe</span> exp1 exp2) = compA exp2 ++ compA exp1 ++ [<span class="hljs-type">Le</span>]
+</div></code></pre>
+<p>As our base case, we have:</p>
+<pre class="hljs"><code><div><span class="hljs-title">compB</span> (<span class="hljs-type">BoolLit</span> n)
+  | n         = [<span class="hljs-type">Tru</span>]
+  | otherwise = [<span class="hljs-type">Fals</span>]
+</div></code></pre>
+<h4 id="223-compiler-of-program---compile">2.2.3. Compiler of program - <em>compile</em></h4>
+<p>As we have implemented compilers for both arithmetic and boolean expressions, we just need to compile the statements.
+Since our <code>Program</code> is a list of statements, we can recursively traverse through each statement, compiling them into machine-executable code by employing specific compilation rules for each statement type.</p>
+<pre class="hljs"><code><div><span class="hljs-title">compile</span> :: <span class="hljs-type">Program</span> -&gt; <span class="hljs-type">Code</span>
+<span class="hljs-title">compile</span> [] = []
+<span class="hljs-title">compile</span> (statement : rest) =
+  <span class="hljs-keyword">case</span> statement <span class="hljs-keyword">of</span>
+    <span class="hljs-type">AssignStm</span> var aExp -&gt; compA aExp ++ [<span class="hljs-type">Store</span> var] ++ compile rest
+    <span class="hljs-type">IfStm</span> cond ifBlock elseBlock -&gt; compB cond ++ [<span class="hljs-type">Branch</span> (compile ifBlock) (compile elseBlock)] ++ compile rest
+    <span class="hljs-type">LoopStm</span> cond loopBody -&gt; <span class="hljs-type">Loop</span> (compB cond) (compile loopBody) : compile rest
+</div></code></pre>
+<h3 id="23-parser">2.3 Parser</h3>
+<p>The parser was developed leveraging the <strong>Parsec</strong> library, accessible through this <a href="https://wiki.haskell.org/Parsing_a_simple_imperative_language">link</a>. This library served as the foundation for constructing the lexer and the parser, enabling the creation of robust parsing functionality within our program.</p>
+<h4 id="231-lexer">2.3.1. Lexer</h4>
+<p>The <code>lexer</code> was created using the constructor <code>emptyDef</code> from <code>Text.ParserCombinators.Parsec.Language</code>, that sets up the syntax and reserved keywords for parsing purposes:</p>
+<pre class="hljs"><code><div><span class="hljs-title">languageDefinition</span> =
+   emptyDef { <span class="hljs-type">Token</span>.identStart      = lower
+            , <span class="hljs-type">Token</span>.identLetter     = alphaNum
+            , <span class="hljs-type">Token</span>.reservedNames   = [ <span class="hljs-string">"if"</span>
+                                      , <span class="hljs-string">"then"</span>
+                                      , <span class="hljs-string">"else"</span>
+                                      , <span class="hljs-string">"while"</span>
+                                      , <span class="hljs-string">"do"</span>
+                                      , <span class="hljs-string">"True"</span>
+                                      , <span class="hljs-string">"False"</span>
+                                      , <span class="hljs-string">"not"</span>
+                                      , <span class="hljs-string">"and"</span>
+                                      ]
+            , <span class="hljs-type">Token</span>.reservedOpNames = [<span class="hljs-string">"+"</span>, <span class="hljs-string">"-"</span>, <span class="hljs-string">"*"</span>
+                                      ,<span class="hljs-string">"=="</span>, <span class="hljs-string">"="</span>, <span class="hljs-string">"&lt;="</span>, <span class="hljs-string">"and"</span>, <span class="hljs-string">"not"</span>
+                                      , <span class="hljs-string">":="</span>
+                                      ]
+            }
+</div></code></pre>
+<p>The lexer can be created by simply doing:</p>
+<pre class="hljs"><code><div><span class="hljs-title">lexer</span> = <span class="hljs-type">Token</span>.makeTokenParser languageDefinition
+</div></code></pre>
+<br>
+<h4 id="232-token-parsers">2.3.2. Token Parsers</h4>
+<p>To facilitate parsing, the lexer's token parsers were extracted:</p>
+<pre class="hljs"><code><div><span class="hljs-title">variable</span>   = <span class="hljs-type">Token</span>.identifier lexer
+<span class="hljs-title">reserved</span>   = <span class="hljs-type">Token</span>.reserved   lexer
+<span class="hljs-title">reservedOp</span> = <span class="hljs-type">Token</span>.reservedOp lexer
+<span class="hljs-title">parens</span>     = <span class="hljs-type">Token</span>.parens     lexer
+<span class="hljs-title">integer</span>    = <span class="hljs-type">Token</span>.integer    lexer
+<span class="hljs-title">semiColon</span>  = <span class="hljs-type">Token</span>.semi       lexer
+<span class="hljs-title">whiteSpace</span> = <span class="hljs-type">Token</span>.whiteSpace lexer
+</div></code></pre>
+<h4 id="233-expression-parsers">2.3.3. Expression Parsers</h4>
+<p>Regarding <code>Aexp</code> and <code>Bexp</code>, the expression parsers were built using the function <code>buildExpressionParser</code> provided by the Parsec library.</p>
+<pre class="hljs"><code><div><span class="hljs-title">aritExp</span> :: <span class="hljs-type">Parser</span> <span class="hljs-type">Aexp</span>
+<span class="hljs-title">aritExp</span> = buildExpressionParser aOperators aritParser
+
+<span class="hljs-title">boolExp</span> :: <span class="hljs-type">Parser</span> <span class="hljs-type">Bexp</span>
+<span class="hljs-title">boolExp</span> = buildExpressionParser bOperators boolParser
+</div></code></pre>
+<p>The operator precedence and associativity were specified as follow:</p>
+<pre class="hljs"><code><div><span class="hljs-title">aOperators</span> :: [[<span class="hljs-type">Operator</span> <span class="hljs-type">Char</span> st <span class="hljs-type">Aexp</span>]]
+<span class="hljs-title">aOperators</span> = [ [<span class="hljs-type">Infix</span>  (reservedOp <span class="hljs-string">"*"</span>   &gt;&gt; return <span class="hljs-type">IntMult</span>) <span class="hljs-type">AssocLeft</span>]
+             , [<span class="hljs-type">Infix</span>  (reservedOp <span class="hljs-string">"+"</span>   &gt;&gt; return <span class="hljs-type">IntAdd</span>) <span class="hljs-type">AssocLeft</span>,
+                <span class="hljs-type">Infix</span>  (reservedOp <span class="hljs-string">"-"</span>   &gt;&gt; return <span class="hljs-type">IntSub</span>) <span class="hljs-type">AssocLeft</span>]
+              ]
+
+<span class="hljs-title">bOperators</span> :: [[<span class="hljs-type">Operator</span> <span class="hljs-type">Char</span> st <span class="hljs-type">Bexp</span>]]
+<span class="hljs-title">bOperators</span> = [ [<span class="hljs-type">Prefix</span> (reservedOp <span class="hljs-string">"not"</span> &gt;&gt; return <span class="hljs-type">BoolNeg</span>)          ],
+                [<span class="hljs-type">Infix</span> (reservedOp <span class="hljs-string">"="</span> &gt;&gt; return <span class="hljs-type">BoolEqual</span>) <span class="hljs-type">AssocLeft</span>         ],
+              [<span class="hljs-type">Infix</span>  (reservedOp <span class="hljs-string">"and"</span> &gt;&gt; return <span class="hljs-type">BoolAnd</span>) <span class="hljs-type">AssocLeft</span>]
+             ]
+</div></code></pre>
+<p>Finally, we have to define the terms:</p>
+<pre class="hljs"><code><div><span class="hljs-title">intParser</span> :: <span class="hljs-type">Parser</span> <span class="hljs-type">ALit</span>
+<span class="hljs-title">intParser</span> = fmap <span class="hljs-type">IntValue</span> integer <span class="hljs-type">Parsec</span>.&lt;|&gt; fmap <span class="hljs-type">IntVariable</span> variable
+
+<span class="hljs-title">aritParser</span> :: <span class="hljs-type">Parser</span> <span class="hljs-type">Aexp</span>
+<span class="hljs-title">aritParser</span> =  parens aritExp <span class="hljs-type">Parsec</span>.&lt;|&gt; fmap <span class="hljs-type">IntLit</span> intParser
+
+<span class="hljs-title">boolParser</span> :: <span class="hljs-type">Parser</span> <span class="hljs-type">Bexp</span>
+<span class="hljs-title">boolParser</span> =  parens boolExp
+     <span class="hljs-type">Parsec</span>.&lt;|&gt; (reserved <span class="hljs-string">"True"</span>  &gt;&gt; return (<span class="hljs-type">BoolLit</span> <span class="hljs-type">True</span>) )
+     <span class="hljs-type">Parsec</span>.&lt;|&gt; (reserved <span class="hljs-string">"False"</span> &gt;&gt; return (<span class="hljs-type">BoolLit</span> <span class="hljs-type">False</span>) )
+     <span class="hljs-type">Parsec</span>.&lt;|&gt; intCompareParser
+
+<span class="hljs-title">intCompareParser</span> :: <span class="hljs-type">Parser</span> <span class="hljs-type">Bexp</span>
+<span class="hljs-title">intCompareParser</span> =
+   <span class="hljs-keyword">do</span> a1 &lt;- aritExp
+      op &lt;- comp
+      a2 &lt;- aritExp
+      return $ op a1 a2
+
+<span class="hljs-title">comp</span> :: <span class="hljs-type">Parser</span> (<span class="hljs-type">Aexp</span> -&gt; <span class="hljs-type">Aexp</span> -&gt; <span class="hljs-type">Bexp</span>)
+<span class="hljs-title">comp</span> = (reservedOp <span class="hljs-string">"&lt;="</span> &gt;&gt; return <span class="hljs-type">IntLe</span>) <span class="hljs-type">Parsec</span>.&lt;|&gt; (reservedOp <span class="hljs-string">"=="</span> &gt;&gt; return <span class="hljs-type">IntEqual</span>)
+</div></code></pre>
+<h4 id="234-statement-parsers">2.3.4. Statement Parsers</h4>
+<p>A statement is parsed using the function <code>statementParser</code> that specific parsers are called depending on the type of the statement:</p>
+<pre class="hljs"><code><div><span class="hljs-title">statementParser</span> :: <span class="hljs-type">Parser</span> <span class="hljs-type">Stm</span>
+<span class="hljs-title">statementParser</span> =  parens statementParser
+           <span class="hljs-type">Parsec</span>.&lt;|&gt; ifParser
+           <span class="hljs-type">Parsec</span>.&lt;|&gt; loopParser
+           <span class="hljs-type">Parsec</span>.&lt;|&gt; assignParser
+</div></code></pre>
+<h4 id="235-statements-parser">2.3.5. Statements Parser</h4>
+<p>To process a sequence of statements, the <code>statementParser</code> was applied zero or more times using <code>many</code> from <code>Text.Parsec.Combinator</code>:</p>
+<pre class="hljs"><code><div><span class="hljs-title">statementsParser</span> :: <span class="hljs-type">Parser</span> [<span class="hljs-type">Stm</span>]
+<span class="hljs-title">statementsParser</span> = parens statementsParser <span class="hljs-type">Parsec</span>.&lt;|&gt; <span class="hljs-type">Parsec</span>.many statementParser 
+</div></code></pre>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<h4 id="236-parse">2.3.6. Parse</h4>
+<p>At last, we can construct our parse function as follows. Here, we utilize <code>statementsParser</code> to process the input, ensuring that the entirety of the input is consumed using <code>Parsec.eof</code> for validation.</p>
+<pre class="hljs"><code><div><span class="hljs-title">parse</span> :: <span class="hljs-type">String</span> -&gt; <span class="hljs-type">Program</span>
+<span class="hljs-title">parse</span> str =
+  <span class="hljs-keyword">case</span> <span class="hljs-type">Parsec</span>.parse (whiteSpace &gt;&gt; statementsParser &lt;* <span class="hljs-type">Parsec</span>.eof) <span class="hljs-string">""</span> str <span class="hljs-keyword">of</span>
+    <span class="hljs-type">Left</span> e -&gt; error <span class="hljs-string">"Run-time error"</span>
+    <span class="hljs-type">Right</span> r -&gt; r
+</div></code></pre>
+<h2 id="examples-of-execution">Examples of execution</h2>
+<h3 id="testassembler">TestAssembler</h3>
+<img src="test1.png" alt="testAssembler examples">
+<h3 id="testparser">TestParser</h3>
+<img src="test2.png" alt="testParser examples">
+
+</body>
+</html>

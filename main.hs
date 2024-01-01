@@ -25,7 +25,7 @@ data Inst =
   deriving Show
 type Code = [Inst]
 
-
+-- Runs the list of instructions returning as ouput an empty code list, a stack and the output values in the storage
 run :: (Code, Stack, State.State) -> (Code, Stack, State.State)
 run ([], stack, state) = ([], stack, state)
 
@@ -149,14 +149,17 @@ testAssembler code = (stack2Str stack, state2Str state)
 
 -- Part 2
 
+-- Definition of arithmetic literals data type representing constants (IntValue) and variables (IntVariable).
 data ALit = IntValue Integer | IntVariable String deriving Show
 
+-- Definition of arithmetic expressions data type 
 data Aexp
   = IntLit    ALit
   | IntAdd    Aexp Aexp
   | IntMult   Aexp Aexp
   | IntSub    Aexp Aexp
 
+-- Definition of boolean expressions data type 
 data Bexp
   = BoolLit    Bool
   | BoolNeg    Bexp
@@ -165,14 +168,22 @@ data Bexp
   | IntEqual   Aexp Aexp
   | IntLe      Aexp Aexp
 
+-- Definition of statements data type 
 data Stm
   = IfStm Bexp [Stm] [Stm]
   | LoopStm Bexp [Stm]
   | AssignStm String Aexp
   | SequenceOfStm [Stm]
 
+-- Definition of program, i.e., a list of statements
 type Program = [Stm]
 
+
+-------------
+-- Compile --
+-------------
+
+-- Compiles arithmetic expressions (Aexp) into a sequence of instructions (Code)
 compA :: Aexp -> Code
 compA (IntLit (IntValue n)) = [Push n]
 compA (IntLit (IntVariable var)) = [Fetch var]
@@ -180,6 +191,7 @@ compA (IntAdd exp1 exp2) = compA exp2 ++ compA exp1 ++ [Add]
 compA (IntMult exp1 exp2) = compA exp2 ++ compA exp1 ++ [Mult]
 compA (IntSub exp1 exp2) = compA exp2 ++ compA exp1 ++ [Sub]
 
+-- Compiles boolean expressions (Bexp) into a sequence of instructions (Code)
 compB :: Bexp -> Code
 compB (BoolLit n)
   | n         = [Tru]
@@ -190,6 +202,7 @@ compB (BoolEqual exp1 exp2) = compB exp2 ++ compB exp1 ++ [Equ]
 compB (IntEqual exp1 exp2) = compA exp2 ++ compA exp1 ++ [Equ]
 compB (IntLe exp1 exp2) = compA exp2 ++ compA exp1 ++ [Le]
 
+-- Compiles a program (list of statements) into a sequence of instructions (Code)
 compile :: Program -> Code
 compile [] = []
 compile (statement : rest) =
@@ -197,6 +210,12 @@ compile (statement : rest) =
     AssignStm var aExp -> compA aExp ++ [Store var] ++ compile rest
     IfStm cond ifBlock elseBlock -> compB cond ++ [Branch (compile ifBlock) (compile elseBlock)] ++ compile rest
     LoopStm cond loopBody -> Loop (compB cond) (compile loopBody) : compile rest
+
+
+
+-----------
+-- Lexer --
+-----------
 
 -- Definition of reserved words and symbols
 languageDefinition :: GenLanguageDef String u Data.Functor.Identity.Identity
@@ -219,10 +238,17 @@ languageDefinition =
                                       ]
             }
 
+-- Definition of a lexer using the defined language 
 lexer :: Token.GenTokenParser String u Data.Functor.Identity.Identity
 lexer = Token.makeTokenParser languageDefinition
 
 
+
+-------------------
+-- Token Parsers --
+-------------------
+
+-- Extraction of Token Parsers
 variable :: Parser String
 variable = Token.identifier lexer
 reserved :: String -> Parsec.ParsecT String u Data.Functor.Identity.Identity ()
@@ -237,6 +263,10 @@ semiColon :: Parsec.ParsecT String u Data.Functor.Identity.Identity String
 semiColon       = Token.semi       lexer
 whiteSpace :: Parsec.ParsecT String u Data.Functor.Identity.Identity ()
 whiteSpace = Token.whiteSpace lexer
+
+------------------------
+-- Expression Parsers --
+------------------------
 
 -- Handles arithmetic expressions
 aritExp :: Parser Aexp
@@ -260,19 +290,22 @@ bOperators = [ [Prefix (reservedOp "not" >> return BoolNeg)          ],
               [Infix  (reservedOp "and" >> return BoolAnd) AssocLeft]
              ]
 
-
+-- Parser for arithmetic literals 
 intParser :: Parser ALit
 intParser = fmap IntValue integer Parsec.<|> fmap IntVariable variable
 
+-- Parser for arithmetic terms 
 aritParser :: Parser Aexp
 aritParser =  parens aritExp Parsec.<|> fmap IntLit intParser
 
+-- Parser for boolean terms 
 boolParser :: Parser Bexp
 boolParser =  parens boolExp
      Parsec.<|> (reserved "True"  >> return (BoolLit True) )
      Parsec.<|> (reserved "False" >> return (BoolLit False) )
      Parsec.<|> intCompareParser
 
+-- Handles boolean expressions that compare arithmetic expressions
 intCompareParser :: Parser Bexp
 intCompareParser =
    do a1 <- aritExp
@@ -280,27 +313,25 @@ intCompareParser =
       a2 <- aritExp
       return $ op a1 a2
 
+-- Handles operators for boolean expressions that compare arithmetic expressions
 comp :: Parser (Aexp -> Aexp -> Bexp)
 comp = (reservedOp "<=" >> return IntLe) Parsec.<|> (reservedOp "==" >> return IntEqual)
 
 
 
+-----------------------
+-- Statement Parsers --
+-----------------------
 
-statementsParser :: Parser [Stm]
-statementsParser = parens statementsParser Parsec.<|> Parsec.many statementParser 
 
-blockParser :: Parser [Stm]
-blockParser = parens statementsParser <* semiColon Parsec.<|> fmap (:[]) statementParser
-
-thenParser :: Parser [Stm]
-thenParser = parens statementsParser Parsec.<|> fmap (:[]) statementParser
-
+-- Parser for different types of statements: if statements, loops, and assignment statements
 statementParser :: Parser Stm
 statementParser =  parens statementParser
            Parsec.<|> ifParser
            Parsec.<|> loopParser
            Parsec.<|> assignParser
 
+-- Parses an if statement with its condition, then block, and else block
 ifParser :: Parser Stm
 ifParser =
   do  reserved "if"
@@ -311,7 +342,7 @@ ifParser =
       elseBlock <- blockParser
       return (IfStm cond ifBlock elseBlock)
 
-
+-- Parses a loop statement with its condition and the body of the loop
 loopParser :: Parser Stm
 loopParser =
   do  reserved "while"
@@ -320,6 +351,7 @@ loopParser =
       loopBody <- blockParser
       return (LoopStm cond loopBody)
 
+-- Parses an assignment statement assigning a value to a variable
 assignParser :: Parser Stm
 assignParser =
   do var  <- variable
@@ -329,7 +361,28 @@ assignParser =
      return (AssignStm var value)
 
 
+------------------------
+-- Statements Parsers --
+------------------------
 
+-- Parses a list of statements
+statementsParser :: Parser [Stm]
+statementsParser = parens statementsParser Parsec.<|> Parsec.many statementParser 
+
+-- Parses a block of statements, ending with a semicolon
+blockParser :: Parser [Stm]
+blockParser = parens statementsParser <* semiColon Parsec.<|> fmap (:[]) statementParser
+
+-- Parses a 'then' block, allowing for either multiple statements within parentheses or a single statement
+thenParser :: Parser [Stm]
+thenParser = parens statementsParser Parsec.<|> fmap (:[]) statementParser
+
+
+-----------
+-- Parse --
+-----------
+
+-- Parses a given string, returning a list of statemements (Program)
 parse :: String -> Program
 parse str =
   case Parsec.parse (whiteSpace >> statementsParser <* Parsec.eof) "" str of
@@ -339,20 +392,4 @@ parse str =
 testParser :: String -> (String, String)
 testParser programCode = (stack2Str stack, state2Str state)
   where (_,stack,state) = run (compile (parse programCode), createEmptyStack, createEmptyState)
-
-
-a = testParser "x := 5; x := x - 1;" == ("","x=4")
-b = testParser "x := 0 - 2;" == ("","x=-2")
-c = testParser "if (not True and 2 <= 5 = 3 == 4) then x :=1; else y := 2;" == ("","y=2")
-d = testParser "x := 42; if x <= 43 then x := 1; else (x := 33; x := x+1;);" == ("","x=1")
-e = testParser "x := 42; if x <= 43 then x := 1; else x := 33; x := x+1;" == ("","x=2")
-f = testParser "x := 42; if x <= 43 then x := 1; else x := 33; x := x+1; z := x+x;" == ("","x=2,z=4")
-g = testParser "x := 44; if x <= 43 then x := 1; else (x := 33; x := x+1;); y := x*2;" == ("","x=34,y=68")
-h = testParser "x := 42; if x <= 43 then (x := 33; x := x+1;) else x := 1;" == ("","x=34")
-i = testParser "if (1 == 0+1 = 2+1 == 3) then x := 1; else x := 2;" == ("","x=1")
-j = testParser "if (1 == 0+1 = (2+1 == 4)) then x := 1; else x := 2;" == ("","x=2")
-k = testParser "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);" == ("","x=2,y=-10,z=6")
-l = testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")
-m = testParser "           z := 2;    if False   =False and True then (    if (z == 2) then why := 3; else (a := 2;); x := 2;) else x := 10;" 
-
 
