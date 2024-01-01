@@ -8,13 +8,13 @@ import Stack (Stack, createEmptyStack, stack2Str)
 import qualified State as Stt (push, find)
 import State (State, createEmptyState, state2Str)
 
-import System.IO
-import Control.Monad
+import qualified Text.Parsec as Parsec
 import Text.ParserCombinators.Parsec ( alphaNum, lower, Parser )
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Language
 import qualified Text.ParserCombinators.Parsec.Token as Token
-import qualified Text.Parsec as Parsec
+import qualified Data.Functor.Identity
+
 
 -- Part 1
 
@@ -129,36 +129,12 @@ branch (rest, stack, state) yes no =
 loop :: Code -> Code -> Code -> Code
 loop rest cond body = cond ++ [Branch (body ++ [Loop cond body]) [Noop]] ++ rest
 
-
--- To help you test your assembler
 testAssembler :: Code -> (String, String)
 testAssembler code = (stack2Str stack, state2Str state)
   where (_,stack,state) = run (code, createEmptyStack, createEmptyState)
 
 
-
-
--- Examples:
--- testAssembler [Push 10,Push 4,Push 3,Sub,Mult] == ("-10","")
--- testAssembler [Fals,Push 3,Tru,Store "var",Store "a", Store "someVar"] == ("","a=3,someVar=False,var=True")
--- testAssembler [Fals,Store "var",Fetch "var"] == ("False","var=False")
--- testAssembler [Push (-20),Tru,Fals] == ("False,True,-20","")
--- testAssembler [Push (-20),Tru,Tru,Neg] == ("False,True,-20","")
--- testAssembler [Push (-20),Tru,Tru,Neg,Equ] == ("False,-20","")
--- testAssembler [Push (-20),Push (-21), Le] == ("True","")
--- testAssembler [Push 5,Store "x",Push 1,Fetch "x",Sub,Store "x"] == ("","x=4")
--- testAssembler [Push 10,Store "i",Push 1,Store "fact",Loop [Push 1,Fetch "i",Equ,Neg] [Fetch "i",Fetch "fact",Mult,Store "fact",Push 1,Fetch "i",Sub,Store "i"]] == ("","fact=3628800,i=1")
--- If you test:
--- testAssembler [Push 1,Push 2,And]
--- You should get an exception with the string: "Run-time error"
--- If you test:
--- testAssembler [Tru,Tru,Store "y", Fetch "x",Tru]
--- You should get an exception with the string: "Run-time error"
-
 -- Part 2
-
--- TODO: Define the types Aexp, Bexp, Stm and Program
-
 
 data ALit = IntValue Integer | IntVariable String deriving Show
 
@@ -167,7 +143,6 @@ data Aexp
   | IntAdd    Aexp Aexp
   | IntMult   Aexp Aexp
   | IntSub    Aexp Aexp
-  deriving Show
 
 data Bexp
   = BoolLit    Bool
@@ -176,13 +151,12 @@ data Bexp
   | BoolEqual  Bexp Bexp
   | IntEqual   Aexp Aexp
   | IntLe      Aexp Aexp
-  deriving Show
 
 data Stm
   = IfStm Bexp [Stm] [Stm]
   | LoopStm Bexp [Stm]
   | AssignStm String Aexp
-  deriving Show
+  | SequenceOfStm [Stm]
 
 type Program = [Stm]
 
@@ -211,6 +185,7 @@ compile (statement : rest) =
     IfStm cond ifBlock elseBlock -> compB cond ++ [Branch (compile ifBlock) (compile elseBlock)] ++ compile rest
     LoopStm cond loopBody -> Loop (compB cond) (compile loopBody) : compile rest
 
+languageDefinition :: GenLanguageDef String u Data.Functor.Identity.Identity
 languageDefinition =
    emptyDef { Token.identStart      = lower
             , Token.identLetter     = alphaNum
@@ -230,24 +205,76 @@ languageDefinition =
                                       ]
             }
 
+lexer :: Token.GenTokenParser String u Data.Functor.Identity.Identity
 lexer = Token.makeTokenParser languageDefinition
 
 
+variable :: Parser String
 variable = Token.identifier lexer
+reserved :: String -> Parsec.ParsecT String u Data.Functor.Identity.Identity ()
 reserved   = Token.reserved   lexer
+reservedOp :: String -> Parsec.ParsecT String u Data.Functor.Identity.Identity ()
 reservedOp = Token.reservedOp lexer
+parens :: Parsec.ParsecT String u Data.Functor.Identity.Identity a -> Parsec.ParsecT String u Data.Functor.Identity.Identity a
 parens     = Token.parens     lexer
+integer :: Parsec.ParsecT String u Data.Functor.Identity.Identity Integer
 integer    = Token.integer    lexer
+semiColon :: Parsec.ParsecT String u Data.Functor.Identity.Identity String
 semiColon       = Token.semi       lexer
+whiteSpace :: Parsec.ParsecT String u Data.Functor.Identity.Identity ()
 whiteSpace = Token.whiteSpace lexer
 
+aritExp :: Parser Aexp
+aritExp = buildExpressionParser aOperators aritParser
+
+boolExp :: Parser Bexp
+boolExp = buildExpressionParser bOperators boolParser
 
 
-statementsParser = parens statementsParser
-  Parsec.<|> Parsec.many statementParser 
+aOperators :: [[Operator Char st Aexp]]
+aOperators = [ [Infix  (reservedOp "*"   >> return IntMult) AssocLeft]
+             , [Infix  (reservedOp "+"   >> return IntAdd) AssocLeft,
+                Infix  (reservedOp "-"   >> return IntSub) AssocLeft]
+              ]
 
+bOperators :: [[Operator Char st Bexp]]
+bOperators = [ [Prefix (reservedOp "not" >> return BoolNeg)          ],
+                [Infix (reservedOp "=" >> return BoolEqual) AssocLeft         ],
+              [Infix  (reservedOp "and" >> return BoolAnd) AssocLeft]
+             ]
+
+intParser :: Parser ALit
+intParser = fmap IntValue integer Parsec.<|> fmap IntVariable variable
+
+aritParser :: Parser Aexp
+aritParser =  parens aritExp Parsec.<|> fmap IntLit intParser
+
+boolParser :: Parser Bexp
+boolParser =  parens boolExp
+     Parsec.<|> (reserved "True"  >> return (BoolLit True) )
+     Parsec.<|> (reserved "False" >> return (BoolLit False) )
+     Parsec.<|> intCompareParser
+
+intCompareParser :: Parser Bexp
+intCompareParser =
+   do a1 <- aritExp
+      op <- comp
+      a2 <- aritExp
+      return $ op a1 a2
+
+comp :: Parser (Aexp -> Aexp -> Bexp)
+comp = (reservedOp "<=" >> return IntLe) Parsec.<|> (reservedOp "==" >> return IntEqual)
+
+
+
+
+statementsParser :: Parser [Stm]
+statementsParser = parens statementsParser Parsec.<|> Parsec.many statementParser 
+
+blockParser :: Parser [Stm]
 blockParser = parens statementsParser <* semiColon Parsec.<|> fmap (:[]) statementParser
 
+thenParser :: Parser [Stm]
 thenParser = parens statementsParser Parsec.<|> fmap (:[]) statementParser
 
 statementParser :: Parser Stm
@@ -255,7 +282,6 @@ statementParser =  parens statementParser
            Parsec.<|> ifParser
            Parsec.<|> loopParser
            Parsec.<|> assignParser
-
 
 ifParser :: Parser Stm
 ifParser =
@@ -284,52 +310,12 @@ assignParser =
      semiColon
      return (AssignStm var value)
 
-aritExp :: Parser Aexp
-aritExp = buildExpressionParser aOperators aTerm
-
-boolExp :: Parser Bexp
-boolExp = buildExpressionParser bOperators bTerm
-
-
-aOperators = [ [Infix  (reservedOp "*"   >> return IntMult) AssocLeft]
-             , [Infix  (reservedOp "+"   >> return IntAdd) AssocLeft,
-                Infix  (reservedOp "-"   >> return IntSub) AssocLeft]
-              ]
-
-bOperators = [ [Prefix (reservedOp "not" >> return BoolNeg)          ],
-                [Infix (reservedOp "=" >> return BoolEqual) AssocLeft         ],
-              [Infix  (reservedOp "and" >> return BoolAnd) AssocLeft]
-             ]
-
-
-intParser :: Parser ALit
-intParser = fmap IntValue integer Parsec.<|> fmap IntVariable variable
-
-
-aTerm =  parens aritExp
-      Parsec.<|> fmap IntLit intParser
-bTerm =  parens boolExp
-     Parsec.<|> (reserved "True"  >> return (BoolLit True) )
-     Parsec.<|> (reserved "False" >> return (BoolLit False) )
-     Parsec.<|> intCompareParser
-
-
-intCompareParser =
-   do a1 <- aritExp
-      op <- comp
-      a2 <- aritExp
-      return $ op a1 a2
-
-comp =   (reservedOp "<=" >> return IntLe)
-          Parsec.<|> (reservedOp "==" >> return IntEqual)
-
-myParser = whiteSpace >> statementsParser
 
 
 parse :: String -> Program
 parse str =
-  case Parsec.parse (myParser <* Parsec.eof) "" str of
-    Left e -> error $ show e
+  case Parsec.parse (whiteSpace >> statementsParser <* Parsec.eof) "" str of
+    Left e -> error "Run-time error"
     Right r -> r
 
 testParser :: String -> (String, String)
@@ -340,7 +326,6 @@ testParser programCode = (stack2Str stack, state2Str state)
 a = testParser "x := 5; x := x - 1;" == ("","x=4")
 b = testParser "x := 0 - 2;" == ("","x=-2")
 c = testParser "if (not True and 2 <= 5 = 3 == 4) then x :=1; else y := 2;" == ("","y=2")
-
 d = testParser "x := 42; if x <= 43 then x := 1; else (x := 33; x := x+1;);" == ("","x=1")
 e = testParser "x := 42; if x <= 43 then x := 1; else x := 33; x := x+1;" == ("","x=2")
 f = testParser "x := 42; if x <= 43 then x := 1; else x := 33; x := x+1; z := x+x;" == ("","x=2,z=4")
@@ -350,3 +335,6 @@ i = testParser "if (1 == 0+1 = 2+1 == 3) then x := 1; else x := 2;" == ("","x=1"
 j = testParser "if (1 == 0+1 = (2+1 == 4)) then x := 1; else x := 2;" == ("","x=2")
 k = testParser "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);" == ("","x=2,y=-10,z=6")
 l = testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")
+m = testParser "           z := 2;    if False   =False and True then (    if (z == 2) then why := 3; else (a := 2;); x := 2;) else x := 10;" 
+
+
