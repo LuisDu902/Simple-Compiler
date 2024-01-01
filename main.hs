@@ -49,10 +49,11 @@ run (Noop : rest, stack, state) = run (rest, stack, state)
 run (Branch yes no : rest, stack, state) = run (branch (rest, stack, state) yes no)
 run (Loop cond body : rest, stack, state) = run (loop rest cond body, stack, state)
 
-
+-- Pushes the given integer into the stack and pushes it ontop of the stack
 push :: Stack -> Integer -> Stack
 push stack n = Stk.push (Elm.I n) stack
 
+-- Adds the top two elements of the stack and pushes it ontop of the stack
 add :: Stack -> Stack
 add stack =
   let elem1 = Stk.top stack
@@ -60,6 +61,7 @@ add stack =
       newStack = Stk.pop (Stk.pop stack)
   in Stk.push ((Elm.+) elem1 elem2) newStack
 
+-- Subtracts the top element of the stack with the top second element of the stack and pushes it ontop of the stack
 sub :: Stack -> Stack
 sub stack =
   let elem1 = Stk.top stack
@@ -67,6 +69,7 @@ sub stack =
       newStack = Stk.pop (Stk.pop stack)
   in Stk.push ((Elm.-) elem1 elem2) newStack
 
+-- Multiplies the top two elements of the stack
 mult :: Stack -> Stack
 mult stack =
   let elem1 = Stk.top stack
@@ -74,12 +77,15 @@ mult stack =
       newStack = Stk.pop (Stk.pop stack)
   in Stk.push ((Elm.*) elem1 elem2) newStack
 
+-- Pushes the boolean True onto the stack
 tru :: Stack -> Stack
 tru = Stk.push (Elm.B True)
 
+-- Pushes the boolean False onto the stack
 fals :: Stack -> Stack
 fals = Stk.push (Elm.B False)
 
+-- Pushes the result of the boolean and operation of the top two elements of the stack into the stack
 bAnd :: Stack -> Stack
 bAnd stack =
   let elem1 = Stk.top stack
@@ -87,6 +93,7 @@ bAnd stack =
       newStack = Stk.pop (Stk.pop stack)
   in Stk.push ((Elm.&&) elem1 elem2) newStack
 
+-- Checks whether the top two elements of the stack are equal and pushes the result onto the stack
 eq :: Stack -> Stack
 eq stack =
   let elem1 = Stk.top stack
@@ -94,6 +101,7 @@ eq stack =
       newStack = Stk.pop (Stk.pop stack)
   in Stk.push ((Elm.==) elem1 elem2) newStack
 
+-- Checks whether the top element of the stack is less or equal to the top second and pushes the result onto the stack
 le :: Stack -> Stack
 le stack =
   let elem1 = Stk.top stack
@@ -101,12 +109,14 @@ le stack =
       newStack = Stk.pop (Stk.pop stack)
   in Stk.push ((Elm.<=) elem1 elem2) newStack
 
+-- Pushes the result of boolean not operation of the top element of the stack on top of the stack
 neg :: Stack -> Stack
 neg stack =
   let elem = Stk.top stack
       newStack = Stk.pop stack in
   Stk.push (Elm.not elem) newStack
 
+-- Places the value of variable with name "String" onto the stack
 fetch :: Stack -> State.State -> String -> Stack
 fetch stack state var =
   let value = Stt.find var state
@@ -114,11 +124,13 @@ fetch stack state var =
     Just a -> Stk.push a stack
     Nothing -> error "Run-time error"
 
+-- Saves the value on top of the stack into the variable named String
 store :: Stack -> State.State -> String -> State.State
 store stack state var =
   let newVal = Stk.top stack
   in Stt.push var newVal state
 
+-- If the value on top of the Stack is True, runs the first piece of code given, otherwise, runs the second
 branch :: (Code, Stack, State.State) -> Code -> Code -> (Code, Stack, State.State)
 branch (rest, stack, state) yes no =
   case Stk.top stack of
@@ -126,6 +138,7 @@ branch (rest, stack, state) yes no =
     Elm.B False -> (no ++ rest, Stk.pop stack, state)
     _ -> error "Run-time error"
 
+-- Runs the code in the condition, if the value on top of the stack is "True", runs the second part of the code and repeats the whole instruction
 loop :: Code -> Code -> Code -> Code
 loop rest cond body = cond ++ [Branch (body ++ [Loop cond body]) [Noop]] ++ rest
 
@@ -185,6 +198,7 @@ compile (statement : rest) =
     IfStm cond ifBlock elseBlock -> compB cond ++ [Branch (compile ifBlock) (compile elseBlock)] ++ compile rest
     LoopStm cond loopBody -> Loop (compB cond) (compile loopBody) : compile rest
 
+-- Definition of reserved words and symbols
 languageDefinition :: GenLanguageDef String u Data.Functor.Identity.Identity
 languageDefinition =
    emptyDef { Token.identStart      = lower
@@ -224,24 +238,28 @@ semiColon       = Token.semi       lexer
 whiteSpace :: Parsec.ParsecT String u Data.Functor.Identity.Identity ()
 whiteSpace = Token.whiteSpace lexer
 
+-- Handles arithmetic expressions
 aritExp :: Parser Aexp
 aritExp = buildExpressionParser aOperators aritParser
 
+-- Handles boolean expressions
 boolExp :: Parser Bexp
 boolExp = buildExpressionParser bOperators boolParser
 
-
+-- Handles operators for arithmetic expressions
 aOperators :: [[Operator Char st Aexp]]
 aOperators = [ [Infix  (reservedOp "*"   >> return IntMult) AssocLeft]
              , [Infix  (reservedOp "+"   >> return IntAdd) AssocLeft,
                 Infix  (reservedOp "-"   >> return IntSub) AssocLeft]
               ]
 
+-- Handles operators for boolean expressions
 bOperators :: [[Operator Char st Bexp]]
 bOperators = [ [Prefix (reservedOp "not" >> return BoolNeg)          ],
                 [Infix (reservedOp "=" >> return BoolEqual) AssocLeft         ],
               [Infix  (reservedOp "and" >> return BoolAnd) AssocLeft]
              ]
+
 
 intParser :: Parser ALit
 intParser = fmap IntValue integer Parsec.<|> fmap IntVariable variable
